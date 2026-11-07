@@ -1,0 +1,52 @@
+<script>
+// test double for the claude.ai runtime: records calls, answers the three queries with fake rows
+window.__calls = [];
+const U = id => "https://app.notion.com/p/" + id;
+const J = a => JSON.stringify(a.map(U));
+const ACAD = "073c5331f3c4e7b21bebacbad4ea528d", FIN = "dc8e7f9d6fddc113b99f41e8cd2875d7";
+const LAB = "2b6f092d642092caa911929705eca3b9", NEWP = "aaaa1111bbbb2222cccc3333dddd4444", ORPH = "18f97cdc2d0c43f026146dbf574bae7c";
+const fake = {
+  "collection://YOUR-PROJECTS-DATA-SOURCE-ID": [
+    { url: U(LAB), Name: "Voice Lab", "Status 1": "In progress", Areas: J([ACAD]), tasks: J(["t1", "t2", "t3"]), "جلو چشم": "__NO__" },
+    { url: U(NEWP), Name: "Voice cloning demo", "Status 1": "Not started", Areas: J([ACAD]), tasks: "[]", "جلو چشم": "__YES__" },
+    { url: U(ORPH), Name: "Graduation party", "Status 1": "Not started" },
+  ],
+  "collection://YOUR-NOTES-DATA-SOURCE-ID": [
+    { url: U("bbbb1111bbbb2222cccc3333dddd4444"), Name: "**Spectrogram notes**", projects: J([LAB]), "Last Edited": "2026-09-27T10:00:00Z", Summary: "line one<br>line two" },
+    { url: U("804f3b85d2af343179ec1281fdd43d71"), Name: "private journal", projects: J([LAB]) },
+  ],
+  "collection://YOUR-TASKS-DATA-SOURCE-ID": [
+    { url: U("ef79017035c744770b0602e53bbfa7e9"), task: "TEST defense", Status: "Not started", "date:due:start": "2026-10-11", priority: "زیاد", projects: J([LAB]) },
+    { url: U("cccc1111bbbb2222cccc3333dddd4444"), task: "TEST new project task", Status: "Done", projects: J([NEWP]) },
+  ],
+};
+window.__failNext = false;
+fake["collection://YOUR-MAILBOX-DATA-SOURCE-ID"] = [
+  { url: U("dddd1111bbbb2222cccc3333dddd4444"), subject: "[Reminder] Project review in 13 days", Body: "Project review is due 11 Oct.<br>Draft deadline 4 Oct.", Status: "Unread", priority: "High", from: "hermes", to: "user", "Created At": "2026-09-28T09:00:00Z" },
+  { url: U("eeee1111bbbb2222cccc3333dddd4444"), subject: "[Digest] 1 overdue quest", Body: "Nothing urgent.", Status: "Done", priority: "Normal", from: "hermes", to: "user", "Created At": "2026-09-27T20:00:00Z" },
+];
+const mcp = Object.freeze({
+  callTool: async (server, tool, input) => {
+    window.__calls.push({ server, tool, input });
+    await new Promise(r => setTimeout(r, 150));
+    if (window.__failNext) { window.__failNext = false; throw { code: "needs_reauth", message: "expired" }; }
+    if (tool === "notion-query-data-sources" && input.data.mode === "view") {
+      if (window.__failView) throw { code: "tool_error", message: "view not found" };
+      const db = input.data.view_url.split("/").pop().split("?")[0];
+      const ds = { "5478d519c99f423554dfa52ca313a6f7": "collection://YOUR-PROJECTS-DATA-SOURCE-ID", "bc1ca047abeb78e8a46528563ce13191": "collection://YOUR-NOTES-DATA-SOURCE-ID",
+        "aeaa9cfd5ca6d593e0e4be347388293a": "collection://YOUR-TASKS-DATA-SOURCE-ID", "9d89c7faa862cbd27dd6ab793bd06ac6": "collection://YOUR-MAILBOX-DATA-SOURCE-ID" }[db];
+      // views may carry rows the page must still drop: an archived task, a non-hermes letter
+      const all = (fake[ds] || []).concat(ds.endsWith("TASKS-DATA-SOURCE-ID") ? [{ url: U("ffff1111bbbb2222cccc3333dddd4444"), task: "ARCHIVED leak", Status: "Not started", archive: "__YES__", projects: J([LAB]) }] : [],
+        ds.endsWith("MAILBOX-DATA-SOURCE-ID") ? [{ url: U("abab1111bbbb2222cccc3333dddd4444"), subject: "PRIVATE leak", from: "user", to: "librarian", Status: "Done" }] : []);
+      const start = input.data.start_cursor ? +input.data.start_cursor : 0, size = 2;   // tiny pages to exercise paging
+      const page = all.slice(start, start + size), more = start + size < all.length;
+      return { content: [], payload: { results: page, has_more: more, next_cursor: more ? String(start + size) : null } };
+    }
+    if (tool === "notion-query-data-sources") return { content: [], payload: { results: fake[input.data.data_source_url] || [], has_more: false } };
+    return { content: [], payload: { ok: true } };
+  },
+});
+window.__grant = localStorage.getItem("mockGrant") || "prompt";
+const perms = { state: async () => window.__grant };
+window.claude = { use: async n => n === "mcp" ? mcp : n === "permissions" ? perms : null };
+</script>

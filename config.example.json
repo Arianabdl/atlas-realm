@@ -1,0 +1,36 @@
+{
+  "_help": "Copy to config.json (git-ignored). Database IDs are the 32-character part of each database URL.",
+  "databases": {
+    "areas": "",
+    "projects": "",
+    "tasks": "",
+    "notes": ""
+  },
+  "archive_property": "archive",
+  "areas": {
+    "title": "Name",
+    "order": [],
+    "short_names": {}
+  },
+  "projects": { "title": "Name", "status": "Status", "area": "Areas", "parent": "Parent item", "pinned": "Pinned" },
+  "tasks": { "title": "task", "status": "Status", "due": "due", "planned": "Date", "priority": "priority", "project": "projects", "area": "Areas" },
+  "notes": { "title": "Name", "project": "projects", "parent": "Parent item", "summary": "Summary", "pinned": "Pinned", "status": "Status" },
+  "status_values": { "in_progress": ["In progress"], "done": ["Done"] },
+  "priority_values": { "h": ["High", "زیاد"], "m": ["Medium", "متوسط"], "l": ["Low", "کم"] },
+  "agents_by_keyword": {
+    "thesis|paper|research": ["academic"],
+    "rag|llm|agent|ai\\b": ["ai_engineer"],
+    "cv|resume|job|career": ["career"],
+    "piano|music": ["music"],
+    "draw|paint|sketch": ["drawing"],
+    "gym|sport|run|volley": ["sport"],
+    "cook|recipe": ["cooking"],
+    "budget|money|finance": ["planner"]
+  },
+  "sensitive_title_regex": "\\b(private|personal|journal|diary)\\b",
+  "claude_ai": {
+    "_help": "Only for the live claude.ai artifact mode (no token needed there).",
+    "data_sources": { "projects": "", "notes": "", "tasks": "", "mailbox": "" },
+    "views": { "projects": "", "notes": "", "tasks": "", "mail": "" }
+  }
+}

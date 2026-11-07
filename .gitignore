@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+dist/check.js
+dist/test.html
+
+# your own data and secrets: never commit
+.env
+config.json
+src/*.local.js
+src/*.local.json
+dist/*.local.html

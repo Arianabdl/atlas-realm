@@ -1,0 +1,344 @@
+{
+ "atlas": {
+  "persona": null,
+  "memory": null,
+  "memLines": null,
+  "memDate": null,
+  "identity": "Central personal assistant. Reads global memory at the start of every session and routes work to the right workstation.",
+  "workflow": [
+   "Sync state",
+   "Route",
+   "Report"
+  ],
+  "rules": [
+   "Strict compliance",
+   "Accuracy over guesswork",
+   "Notion integrity"
+  ]
+ },
+ "hermes": {
+  "persona": null,
+  "memory": null,
+  "memLines": null,
+  "memDate": null,
+  "identity": "Always-on agent on Atlas Server: Telegram, Notion capture, daily digests and reminders.",
+  "workflow": [],
+  "rules": [
+   "Write every message to the Agent Mailbox"
+  ]
+ },
+ "planner": {
+  "persona": "planning/planning_persona.md",
+  "memory": "planning/planning_memory.md",
+  "memLines": 78,
+  "memDate": "2026-11-01",
+  "identity": "Chief of staff. Plans the week, resolves conflicts and leaves floating capacity.",
+  "workflow": [
+   "Collect tasks",
+   "Propose the week",
+   "Confirm"
+  ],
+  "rules": [
+   "Never fill every day",
+   "Heavy work in the afternoon"
+  ]
+ },
+ "librarian": {
+  "persona": "librarian/librarian_persona.md",
+  "memory": "librarian/librarian_memory.md",
+  "memLines": 52,
+  "memDate": "2026-11-01",
+  "identity": "Research and note synthesis. Keeps the three-level Area → Project → Task taxonomy.",
+  "workflow": [],
+  "rules": [
+   "No orphan tasks"
+  ]
+ },
+ "notion_agent": {
+  "persona": "notion_agent/notion_agent_persona.md",
+  "memory": "notion_agent/notion_agent_memory.md",
+  "memLines": 33,
+  "memDate": "2026-11-01",
+  "identity": "Audits Notion database structure and keeps the schema map current.",
+  "workflow": [],
+  "rules": [
+   "Never rename a view the realm reads"
+  ]
+ },
+ "academic": {
+  "persona": "academic/academic_persona.md",
+  "memory": "academic/academic_memory.md",
+  "memLines": 61,
+  "memDate": "2026-11-01",
+  "identity": "Coursework, thesis and alumni council work.",
+  "workflow": [],
+  "rules": [
+   "Cite sources",
+   "Never invent results"
+  ]
+ },
+ "latex_builder": {
+  "persona": "latex_builder/latex_builder_persona.md",
+  "memory": "latex_builder/latex_builder_memory.md",
+  "memLines": 44,
+  "memDate": "2026-11-01",
+  "identity": "Compiles thesis chapters with XeLaTeX and fixes typesetting.",
+  "workflow": [],
+  "rules": [
+   "Zero undefined references"
+  ]
+ },
+ "slides_agent": {
+  "persona": "slides_agent/slides_agent_persona.md",
+  "memory": "slides_agent/slides_agent_memory.md",
+  "memLines": 30,
+  "memDate": "2026-11-01",
+  "identity": "Designs presentation decks.",
+  "workflow": [],
+  "rules": [
+   "One idea per slide"
+  ]
+ },
+ "ai_engineer": {
+  "persona": "ai_engineer/ai_engineer_persona.md",
+  "memory": "ai_engineer/ai_engineer_memory.md",
+  "memLines": 37,
+  "memDate": "2026-11-01",
+  "identity": "Builds and evaluates AI projects (RAG, fine-tuning, agents).",
+  "workflow": [],
+  "rules": [
+   "Measure before you claim"
+  ]
+ },
+ "career": {
+  "persona": "career/career_persona.md",
+  "memory": "career/career_memory.md",
+  "memLines": 70,
+  "memDate": "2026-11-01",
+  "identity": "Job applications, proposals and university relations.",
+  "workflow": [],
+  "rules": [
+   "No hyperbole"
+  ]
+ },
+ "resume": {
+  "persona": "resume/resume_persona.md",
+  "memory": "resume/resume_memory.md",
+  "memLines": 48,
+  "memDate": "2026-11-01",
+  "identity": "Keeps CV variants and compiles them.",
+  "workflow": [],
+  "rules": [
+   "One page for fresh graduates"
+  ]
+ },
+ "research_editor": {
+  "persona": "research_editor/research_editor_persona.md",
+  "memory": "research_editor/research_editor_memory.md",
+  "memLines": 29,
+  "memDate": "2026-11-01",
+  "identity": "Edits long-form articles for the newsletter.",
+  "workflow": [],
+  "rules": [
+   "Short sentences"
+  ]
+ },
+ "architect": {
+  "persona": "architect/architect_persona.md",
+  "memory": "architect/architect_memory.md",
+  "memLines": 41,
+  "memDate": "2026-11-01",
+  "identity": "Keeps the changelog of the multi-agent architecture.",
+  "workflow": [],
+  "rules": [
+   "Log every structural change"
+  ]
+ },
+ "maintenance": {
+  "persona": "maintenance/maintenance_persona.md",
+  "memory": "maintenance/maintenance_memory.md",
+  "memLines": 58,
+  "memDate": "2026-11-01",
+  "identity": "The only agent allowed to change scripts and server code.",
+  "workflow": [],
+  "rules": [
+   "Secrets come from the environment"
+  ]
+ },
+ "github": {
+  "persona": "github/github_persona.md",
+  "memory": "github/github_memory.md",
+  "memLines": 26,
+  "memDate": "2026-11-01",
+  "identity": "Prepares repositories for publishing and audits them for secrets.",
+  "workflow": [],
+  "rules": [
+   "Scan history before making a repo public"
+  ]
+ },
+ "philosophy": {
+  "persona": "philosophy/philosophy_persona.md",
+  "memory": "philosophy/philosophy_memory.md",
+  "memLines": 35,
+  "memDate": "2026-11-01",
+  "identity": "Reading companion for philosophy and reflection.",
+  "workflow": [],
+  "rules": [
+   "Ask before concluding"
+  ]
+ },
+ "music": {
+  "persona": "music/music_persona.md",
+  "memory": "music/music_memory.md",
+  "memLines": 22,
+  "memDate": "2026-11-01",
+  "identity": "Piano practice planning and music theory.",
+  "workflow": [],
+  "rules": [
+   "Short daily sessions"
+  ]
+ },
+ "drawing": {
+  "persona": "drawing/drawing_persona.md",
+  "memory": "drawing/drawing_memory.md",
+  "memLines": 19,
+  "memDate": "2026-11-01",
+  "identity": "Weekly drawing practice and references.",
+  "workflow": [],
+  "rules": [
+   "Draw from life once a week"
+  ]
+ },
+ "cooking": {
+  "persona": "cooking/cooking_persona.md",
+  "memory": "cooking/cooking_memory.md",
+  "memLines": 18,
+  "memDate": "2026-11-01",
+  "identity": "Recipes and meal prep.",
+  "workflow": [],
+  "rules": [
+   "Use what is in the fridge"
+  ]
+ },
+ "sport": {
+  "persona": "sport/sport_persona.md",
+  "memory": "sport/sport_memory.md",
+  "memLines": 27,
+  "memDate": "2026-11-01",
+  "identity": "Volleyball training, gym routines and recovery.",
+  "workflow": [],
+  "rules": [
+   "Rest days are training"
+  ]
+ },
+ "spotify_dj": {
+  "persona": "spotify_dj/spotify_dj_persona.md",
+  "memory": "spotify_dj/spotify_dj_memory.md",
+  "memLines": 15,
+  "memDate": "2026-11-01",
+  "identity": "Curates playlists for the mood of the day.",
+  "workflow": [],
+  "rules": [
+   "Never repeat a track in one hour"
+  ]
+ },
+ "voice_lab": {
+  "persona": "voice_lab/voice_lab_persona.md",
+  "memory": "voice_lab/voice_lab_memory.md",
+  "memLines": 64,
+  "memDate": "2026-11-01",
+  "identity": "Runs voice-conversion experiments and evaluation.",
+  "workflow": [],
+  "rules": [
+   "Report significance, not ratios"
+  ]
+ },
+ "recruiter": {
+  "persona": "recruiter/recruiter_persona.md",
+  "memory": "recruiter/recruiter_memory.md",
+  "memLines": 46,
+  "memDate": "2026-11-01",
+  "identity": "Talent-acquisition workflows and candidate scorecards.",
+  "workflow": [],
+  "rules": [
+   "Keep candidate data private"
+  ]
+ },
+ "exam_prep": {
+  "persona": "exam_prep/exam_prep_persona.md",
+  "memory": "exam_prep/exam_prep_memory.md",
+  "memLines": 31,
+  "memDate": "2026-11-01",
+  "identity": "Exam study plans and practice tests.",
+  "workflow": [],
+  "rules": [
+   "Track weak topics"
+  ]
+ },
+ "plant_monitor": {
+  "persona": "plant_monitor/plant_monitor_persona.md",
+  "memory": "plant_monitor/plant_monitor_memory.md",
+  "memLines": 24,
+  "memDate": "2026-11-01",
+  "identity": "Sensor dashboard and anomaly alerts for a small plant.",
+  "workflow": [],
+  "rules": [
+   "Alert budget per day"
+  ]
+ },
+ "thesis_helper": {
+  "persona": "thesis_helper/thesis_helper_persona.md",
+  "memory": "thesis_helper/thesis_helper_memory.md",
+  "memLines": 20,
+  "memDate": "2026-11-01",
+  "identity": "Helps structure a thesis draft.",
+  "workflow": [],
+  "rules": [
+   "Outline before writing"
+  ]
+ },
+ "apply": {
+  "persona": "apply/apply_persona.md",
+  "memory": "apply/apply_memory.md",
+  "memLines": 23,
+  "memDate": "2026-11-01",
+  "identity": "Study-abroad applications and deadlines.",
+  "workflow": [],
+  "rules": [
+   "Deadlines first"
+  ]
+ },
+ "regulations_qa": {
+  "persona": "regulations_qa/regulations_qa_persona.md",
+  "memory": "regulations_qa/regulations_qa_memory.md",
+  "memLines": 12,
+  "memDate": "2026-11-01",
+  "identity": "Answers questions about university regulations from source documents.",
+  "workflow": [],
+  "rules": [
+   "Quote the article number"
+  ]
+ },
+ "student_profile": {
+  "persona": "student_profile/student_profile_persona.md",
+  "memory": "student_profile/student_profile_memory.md",
+  "memLines": 12,
+  "memDate": "2026-11-01",
+  "identity": "Builds student skill profiles.",
+  "workflow": [],
+  "rules": [
+   "Ask for consent"
+  ]
+ },
+ "teaching_assistant": {
+  "persona": "teaching_assistant/teaching_assistant_persona.md",
+  "memory": "teaching_assistant/teaching_assistant_memory.md",
+  "memLines": 14,
+  "memDate": "2026-11-01",
+  "identity": "Course TA helper: homework, grading rubrics.",
+  "workflow": [],
+  "rules": [
+   "Same rubric for everyone"
+  ]
+ }
+}

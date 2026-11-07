@@ -1,0 +1,1248 @@
+<meta charset="utf-8">
+<title>Atlas Realm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=Vazirmatn:wght@400;600;700&family=IBM+Plex+Mono&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ink: #15142a;
+    --panel: #211e3b;
+    --panel-2: #2b2750;
+    --line: #463f74;
+    --parch: #f3ead6;
+    --muted: #b3acd0;
+    --gold: #f2c14e;
+    --red: #e2574c;
+    --green: #7ccf6b;
+    --blue: #79b4e8;
+    --paper: #efe2c0;
+    --paper-2: #e4d3a8;
+    --paper-ink: #3a2a1a;
+    --paper-muted: #7a6446;
+    --display: "Pixelify Sans", "Vazirmatn", ui-monospace, monospace;
+    --body: "Atkinson Hyperlegible", "Vazirmatn", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  }
+  html, body { background: var(--ink); color: var(--parch); }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 20px 40px; }
+  .wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 18px; }
+  a { color: var(--blue); }
+  header { display: grid; gap: 6px; }
+  h1 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 5vw, 46px); line-height: 1; margin: 0; color: var(--gold); }
+  .lede { margin: 0; max-width: 72ch; }
+  .note { margin: 0; color: var(--muted); font-size: 13px; max-width: 90ch; }
+
+  .hud { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hud .s { background: var(--panel); border: 1px solid var(--line); padding: 6px 12px; display: grid; gap: 0; min-width: 104px; }
+  .hud .s b { font: 700 20px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+  .hud .s span { font-size: 12px; color: var(--muted); }
+  .hud .s.warn b { color: #ff8a7e; } .hud .s.ok b { color: var(--green); } .hud .s.off b { color: var(--muted); }
+
+  .game { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 20px; align-items: start; }
+  @media (max-width: 1040px) { .game { grid-template-columns: minmax(0, 1fr); } }
+  .map-col { display: grid; gap: 14px; min-width: 0; }
+  .map { position: relative; width: 100%; aspect-ratio: 512 / 352; max-width: 100%; overflow: hidden;
+         border: 3px solid #0c0b1a; box-shadow: 0 0 0 3px var(--line); background: #5aa04a; }
+  .map canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+  .hit { position: absolute; background: transparent; border: 0; padding: 0; cursor: pointer; }
+  .hit:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .hit::after { content: attr(data-name); position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%);
+                white-space: nowrap; font: 600 12px/1.3 var(--body); color: var(--parch); background: rgba(21,20,42,.94);
+                border: 1px solid var(--line); padding: 3px 7px; pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 4; unicode-bidi: plaintext; }
+  .hit:hover::after, .hit:focus-visible::after { opacity: 1; }
+  .sign { position: absolute; transform: translate(-50%, -50%); z-index: 2; cursor: pointer;
+          font: 700 clamp(8px, 1.05vw, 13px)/1 var(--display); color: #2a1d10; background: #e8c98e;
+          border: 2px solid #5c3b22; box-shadow: 0 2px 0 #3a281d; padding: 3px 6px; white-space: nowrap; display: flex; gap: 5px; align-items: center; }
+  .sign b { background: var(--red); color: #fff; padding: 1px 4px; font-size: .85em; }
+  .sign:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .sign.stone { background: #b9bdd0; border-color: #3b3f52; color: #26283a; }
+  .sign.sea { background: #d8e6f7; border-color: #2c4478; color: #1b2a4a; }
+  .sign.lost { background: #d9cbb4; border-style: dashed; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .legend .it { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .legend canvas { width: 42px; height: 54px; image-rendering: pixelated; }
+  .legend strong { display: block; color: var(--parch); font-size: 13px; }
+
+  .panel { background: var(--panel); border: 3px solid var(--parch); box-shadow: 0 0 0 3px #0c0b1a, 0 0 0 6px var(--gold);
+           margin: 6px; padding: 16px; display: grid; gap: 14px; min-width: 0; align-content: start; }
+  .eyebrow { font: 700 11px/1.2 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .panel h2 { font-family: var(--display); font-weight: 700; font-size: 25px; line-height: 1.15; margin: 4px 0 0; text-wrap: balance; unicode-bidi: plaintext; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .pill { font: 700 11px/1 var(--body); letter-spacing: .06em; text-transform: uppercase; padding: 4px 7px; border: 1px solid currentColor; white-space: nowrap; }
+  .s-active { color: var(--gold); } .s-done { color: var(--green); } .s-idle { color: var(--muted); } .s-down { color: #ff8a7e; } .s-online { color: var(--green); } .s-local { color: var(--blue); }
+  .s-pin { color: #8fb4ff; } .s-over { color: #ff8a7e; }
+  .nlink { font-size: 12px; }
+  .back { all: unset; cursor: pointer; font: 600 13px var(--body); color: var(--muted); display: inline-flex; gap: 6px; align-items: center; unicode-bidi: plaintext; }
+  .back:hover, .back:focus-visible { color: var(--gold); }
+  .back:focus-visible { outline: 2px solid var(--gold); }
+  .interior-wrap { position: relative; }
+  .interior { width: 100%; aspect-ratio: 192 / 112; max-width: 100%; image-rendering: pixelated; display: block; border: 2px solid #0c0b1a; }
+  .hot { position: absolute; background: transparent; border: 1px dashed transparent; cursor: pointer; padding: 0; }
+  .hot:hover, .hot:focus-visible { border-color: var(--gold); background: rgba(242,193,78,.12); outline: none; }
+  .hot::after { content: attr(data-name); position: absolute; top: calc(100% + 2px); left: 50%; transform: translateX(-50%); white-space: nowrap;
+                font: 600 11px/1.2 var(--body); background: rgba(21,20,42,.94); color: var(--parch); padding: 2px 6px; border: 1px solid var(--line); opacity: 0; pointer-events: none; z-index: 3; }
+  .hot:hover::after, .hot:focus-visible::after { opacity: 1; }
+  .cap { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .tile { background: var(--panel-2); padding: 7px 8px; display: grid; gap: 1px; }
+  .tile b { font: 700 18px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+  .tile span { font-size: 11px; color: var(--muted); }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn { all: unset; cursor: pointer; font: 700 13px/1 var(--body); padding: 8px 11px; background: #3a345f; border: 2px solid #0c0b1a; box-shadow: inset 0 -2px 0 rgba(0,0,0,.35); }
+  .btn:hover, .btn:focus-visible { background: #4a4380; }
+  .btn:focus-visible { outline: 2px solid var(--gold); }
+  .sec h3 { font-family: var(--display); font-weight: 500; font-size: 16px; margin: 0 0 6px; color: var(--gold); display: flex; justify-content: space-between; gap: 8px; }
+  .sec h3 span { color: var(--muted); font-family: var(--body); font-size: 12px; }
+  ul.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  ul.list li { display: flex; gap: 8px; align-items: baseline; font-size: 14px; padding: 5px 8px; background: var(--panel-2); }
+  ul.list li .t { flex: 1; min-width: 0; unicode-bidi: plaintext; }
+  ul.list li .m { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  button.lnk { all: unset; cursor: pointer; flex: 1; min-width: 0; unicode-bidi: plaintext; }
+  button.lnk:hover, button.lnk:focus-visible { color: var(--gold); }
+  button.lnk:focus-visible { outline: 2px solid var(--gold); }
+  .dot { width: 8px; height: 8px; display: inline-block; flex: none; }
+  .agents { display: flex; flex-wrap: wrap; gap: 6px; }
+  .agent { all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px; background: var(--panel-2); padding: 4px 8px 4px 5px; font-size: 13px; }
+  .agent:hover, .agent:focus-visible { background: #3a345f; }
+  .agent:focus-visible { outline: 2px solid var(--gold); }
+  .agent img.av { width: 18px; height: 21px; image-rendering: pixelated; margin-block: -3px; }
+  img.emb { width: 28px; height: 28px; image-rendering: pixelated; flex: none; }
+  img.emb.sm { width: 16px; height: 16px; align-self: center; }
+  h2.withem { display: flex; gap: 10px; align-items: center; }
+  .emblems { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .emblems .em { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+  .emblems .em img { width: 16px; height: 16px; image-rendering: pixelated; }
+  .agent small { color: var(--muted); }
+  .agent.down { opacity: .7; } .agent.down small { color: #ff8a7e; }
+  .empty { font-size: 13px; color: var(--muted); font-style: italic; }
+
+  /* parchment: quest log, library, book */
+  .parchment { background: var(--paper); color: var(--paper-ink); padding: 14px; border: 2px solid #8a6a44;
+               box-shadow: inset 0 0 0 3px var(--paper-2), 0 3px 0 #0c0b1a; display: grid; gap: 12px; }
+  .parchment h3 { font: 700 17px/1.2 var(--display); margin: 0; color: #5c3b22; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .parchment h3 span { font: 400 12px var(--body); color: var(--paper-muted); }
+  .parchment .muted { color: var(--paper-muted); font-size: 13px; }
+  .qbar { height: 10px; background: #d2bf93; border: 1px solid #8a6a44; }
+  .qbar i { display: block; height: 100%; background: repeating-linear-gradient(90deg, #5a9e4b 0 6px, #4d8a40 6px 8px); }
+  .quests { display: grid; gap: 6px; }
+  .quest { background: #f7eed6; border: 1px solid #b89a68; padding: 8px 10px; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: start; }
+  .quest.over { border-color: #b8402f; box-shadow: inset 3px 0 0 #b8402f; }
+  .quest.soon { box-shadow: inset 3px 0 0 #c9962a; }
+  .quest .gems { display: flex; gap: 2px; padding-top: 4px; }
+  .quest .gems i { width: 7px; height: 7px; transform: rotate(45deg); background: #c9b98f; display: block; }
+  .quest .gems.h i { background: #c8402f; } .quest .gems.m i:nth-child(-n+2) { background: #7a4fb0; } .quest .gems.l i:first-child { background: #3c6fb0; }
+  .quest .qt { unicode-bidi: plaintext; font-size: 14px; line-height: 1.35; }
+  .quest .qm { font-size: 12px; color: var(--paper-muted); grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .quest .due { font: 700 11px/1 var(--body); padding: 3px 6px; white-space: nowrap; background: #e6d7ae; color: #5c3b22; }
+  .quest.over .due { background: #b8402f; color: #fff; }
+  .quest.soon .due { background: #c9962a; color: #fff; }
+  .quest a { color: #2c4f8c; }
+  .books { display: grid; gap: 5px; }
+  .book { all: unset; cursor: pointer; display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; background: #f7eed6; border: 1px solid #b89a68; padding: 7px 10px 7px 0; }
+  .book:hover, .book:focus-visible { background: #fff7e2; }
+  .book:focus-visible { outline: 2px solid #5c3b22; }
+  .book .spine { align-self: stretch; margin-block: -7px; }
+  .book .bt { unicode-bidi: plaintext; font-size: 14px; }
+  .book .bm { font-size: 11px; color: var(--paper-muted); white-space: nowrap; }
+  .book.child { margin-inline-start: 22px; }
+  .book.sealed { cursor: default; background: #d9cbab; color: #6d5a3d; }
+  .page { background: #fbf4e0; border: 1px solid #b89a68; padding: 14px 16px; display: grid; gap: 10px; }
+  .page h4 { font: 700 20px/1.25 var(--display); margin: 0; color: #3a2a1a; unicode-bidi: plaintext; }
+  .page p { margin: 0; unicode-bidi: plaintext; }
+
+  /* character sheet */
+  .sheet { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
+  .sheet canvas { width: 96px; height: 116px; image-rendering: pixelated; border: 2px solid #0c0b1a; }
+  .meter { height: 8px; background: #0c0b1a; border: 1px solid var(--line); }
+  .meter i { display: block; height: 100%; background: var(--blue); }
+  .meter.hot i { background: #ff8a7e; }
+  ol.abil { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; font-size: 14px; }
+  .path { font: 12px/1.35 var(--mono); color: var(--muted); word-break: break-all; }
+  .msg { background: var(--panel-2); border: 1px dashed var(--line); padding: 8px 10px; display: grid; gap: 2px; font-size: 14px; }
+  .msg small { color: var(--muted); font-size: 12px; }
+  .msg.unread { border-style: solid; border-color: var(--gold); }
+  .msg .mt { unicode-bidi: plaintext; font-size: 14px; flex: 1; min-width: 0; }
+  .msg .mb { margin: 2px 0; white-space: pre-line; unicode-bidi: plaintext; color: var(--parch); }
+  .banner { background: #3a2230; border: 1px solid #7a3a4a; color: #ffc9c2; padding: 8px 10px; font-size: 13px; }
+
+  .syncbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font-size: 13px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); padding: 8px 12px; }
+  .syncbar > span:nth-child(2) { flex: 1; min-width: 200px; }
+  .sdot { width: 10px; height: 10px; display: inline-block; flex: none; }
+  .sdot.on { background: var(--green); box-shadow: 0 0 6px var(--green); } .sdot.off { background: var(--muted); }
+  .sdot.bad { background: var(--red); } .sdot.busy { background: var(--gold); animation: pulse 1s steps(2) infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .btn[disabled], .qbtn[disabled] { opacity: .55; cursor: default; }
+  .qbtn { all: unset; cursor: pointer; font: 700 11px/1 var(--body); padding: 4px 8px; background: #e6d7ae; color: #5c3b22; border: 1px solid #8a6a44; white-space: nowrap; }
+  .qbtn:hover, .qbtn:focus-visible { background: #d9c48c; }
+  .qbtn:focus-visible { outline: 2px solid #5c3b22; }
+  .qbtn.hot { background: #4d8a40; color: #fff; border-color: #2d5a28; }
+  .quest.donecard { background: #e4efd8; border-color: #7aa56a; }
+  .quest.archived { grid-template-columns: 0 1fr auto; opacity: .75; background: #efe6cc; }
+  .quest.archived .qt { text-decoration: line-through; }
+  .toast { display: flex; gap: 8px; align-items: center; padding: 8px 10px; font-size: 13px; border: 1px solid; }
+  .toast span { flex: 1; unicode-bidi: plaintext; }
+  .toast.ok { background: #1f3a2a; border-color: #4d8a40; color: #cfeec4; }
+  .toast.bad { background: #3a2230; border-color: #7a3a4a; color: #ffc9c2; }
+  .toast .x { all: unset; cursor: pointer; font-size: 16px; padding: 0 4px; }
+  .toast .x:focus-visible { outline: 2px solid var(--gold); }
+  @media (prefers-reduced-motion: reduce) { .sdot.busy { animation: none; } }
+  .report, .mapping { display: grid; gap: 10px; }
+  .report h2, .mapping h2 { font-family: var(--display); font-weight: 500; font-size: 20px; margin: 0; color: var(--gold); }
+  .findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; }
+  .find { background: var(--panel); border: 1px solid var(--line); padding: 10px 12px; display: grid; gap: 4px; font-size: 14px; }
+  .find b { font-family: var(--display); font-weight: 500; font-size: 16px; color: var(--parch); }
+  .find p { margin: 0; color: var(--muted); unicode-bidi: plaintext; }
+  .mtable { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+  .mcell { background: var(--panel); border: 1px solid var(--line); padding: 10px 12px; display: grid; gap: 2px; }
+  .mcell .k { font-size: 12px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .mcell .v { font-family: var(--display); font-size: 17px; }
+  .mcell .d { font-size: 13px; color: var(--muted); }
+  @media (max-width: 480px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sheet { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .hit::after, .hot::after { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Atlas Realm</h1>
+    <p class="lede">Your Notion as a world. Areas are towns, projects are houses, sub-projects are the sheds beside them, and your agents live inside. Click a house to go in, then the bookshelf, the quest board or a resident. The ship in the harbor carries HERMES messages.</p>
+    <p class="note" id="asof"></p>
+  </header>
+  <div class="hud" id="hud"></div>
+  <div class="syncbar" id="syncbar" aria-live="polite"></div>
+  <section class="game">
+    <div class="map-col">
+      <div class="map" id="map"><canvas id="world" width="512" height="352" aria-hidden="true"></canvas></div>
+      <div class="legend" id="legend"></div>
+      <div class="emblems" id="emblems" aria-label="Roof emblems"></div>
+    </div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </section>
+  <section class="report">
+    <h2>Scout's report</h2>
+    <div class="findings" id="findings"></div>
+  </section>
+  <section class="mapping">
+    <h2>How Notion maps onto the world</h2>
+    <div class="mtable">
+      <div class="mcell"><span class="k">Area</span><span class="v">Town</span><span class="d">The sign shows open quests in red.</span></div>
+      <div class="mcell"><span class="k">Project</span><span class="v">House or manor</span><span class="d">The roof emblem and the building say what the project is about. Big projects get a two-storey manor.</span></div>
+      <div class="mcell"><span class="k">Sub-project</span><span class="v">Shed beside the house</span><span class="d">From <code>Parent item</code>. Its quests appear on the parent's board.</span></div>
+      <div class="mcell"><span class="k">Task</span><span class="v">Quest</span><span class="d">Gems show <code>priority</code>. Red cards are past <code>due</code>. Archive ticks the <code>archive</code> box in Notion.</span></div>
+      <div class="mcell"><span class="k">Note</span><span class="v">Book</span><span class="d">Sub-notes are chapters. Private notes stay sealed.</span></div>
+      <div class="mcell"><span class="k">Agent</span><span class="v">Resident</span><span class="d">Dressed for the job: chef hat, headphones, beret, hard hat. Assigned from workspace folders.</span></div>
+      <div class="mcell"><span class="k">Atlas Server</span><span class="v">Ruined keep</span><span class="d">You shut the old server down, so it lies in ruins at the edge of the map.</span></div>
+      <div class="mcell"><span class="k">HERMES</span><span class="v">Ship in the harbor</span><span class="d">Its messages are the cargo.</span></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const SNAPSHOT = /*__WORLD__*/;
+const PERSONAS = /*__PERSONAS__*/;
+// state that survives a rebuild of the world after a live sync
+const S = { mcpApi: null, toast: null, ARCHIVED: [], pending: new Set(), sync: { status: "snapshot", at: null, more: [], msg: "" }, sel: null, place: {}, booted: false,
+  mail: { status: "idle", at: null, msgs: [], msg: "" }, timer: 0 };
+const DAY = 24 * 60 * 60 * 1000;
+// this browser remembers the last sync, the ship's messages and where each house stands
+const store = {
+  get(k) { try { const v = localStorage.getItem("atlasRealm." + k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem("atlasRealm." + k, JSON.stringify(v)); } catch (e) { /* storage blocked or full: keep working without it */ } },
+};
+S.place = store.get("place.v1") || {};
+const CACHED = store.get("world.v1");
+const START = CACHED && CACHED.world && Array.isArray(CACHED.world.projects) && CACHED.world.projects.length ? CACHED.world : null;
+if (START) Object.assign(S.sync, { status: "live", at: new Date(CACHED.at), more: CACHED.more || [] });
+const CACHED_MAIL = store.get("mail.v1");
+if (CACHED_MAIL && Array.isArray(CACHED_MAIL.msgs)) Object.assign(S.mail, { status: "ok", at: new Date(CACHED_MAIL.at), msgs: CACHED_MAIL.msgs });
+const SNAP_AG = Object.fromEntries(SNAPSHOT.projects.map(p => [p.id, p.ag]));
+const SNAP_SEALED = new Set(SNAPSHOT.notes.filter(n => n.sealed).map(n => n.id));
+let CURRENT = null;
+function reboot(world) { if (CURRENT) CURRENT.destroy(); CURRENT = boot(world); }
+function boot(WORLD) {
+  let dead = false, rafId = 0;
+  const T = 8, GW = 64, GH = 44, W = GW * T, H = GH * T;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const NOW0 = new Date(), ASOF = new Date(WORLD.asOf + "T00:00:00");
+  // live data is judged against today; the frozen snapshot against its own date
+  let TODAY = WORLD.live ? new Date(NOW0.getFullYear(), NOW0.getMonth(), NOW0.getDate()) : ASOF;
+  const days = s => Math.round((new Date(s.slice(0, 10) + "T00:00:00") - TODAY) / 86400000);
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const nurl = id => `https://app.notion.com/p/${id}`;
+  const fmtDate = s => new Date(s.slice(0, 10) + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const fmtDateTime = d => d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  // ---------- agents ----------
+  const SERVER_DOWN = ["planner", "librarian", "notion_agent"];
+  const COLORS = {
+    atlas: "#f2c14e", hermes: "#efe9ff", planner: "#e2574c", librarian: "#6fa8dc", notion_agent: "#b5a1e6", academic: "#d8664c",
+    voice_lab: "#ff8f6b", latex_builder: "#9aa3bb", slides_agent: "#f08a4b", ai_engineer: "#53c2c9", apply: "#7fb3ff", exam_prep: "#c3a3ff",
+    regulations_qa: "#58b7a0", student_profile: "#9bd46f", teaching_assistant: "#e7c35a", plant_monitor: "#ff9e3d", thesis_helper: "#b88b6a",
+    career: "#4ea1a1", resume: "#8fb8d8", recruiter: "#3b9bd0", research_editor: "#c9a86a", architect: "#c7cbe0", maintenance: "#8f9c52",
+    github: "#7a7f96", philosophy: "#a77cc0", music: "#d65f9a", drawing: "#e39b3a", cooking: "#dcc54e", sport: "#46b889", spotify_dj: "#5fd07f",
+  };
+  const agentStatus = a => a === "hermes" ? "online" : SERVER_DOWN.includes(a) ? "down" : "local";
+  const agentDev = a => (a === "hermes" || SERVER_DOWN.includes(a)) ? "Atlas Server" : "Atlas Primary";
+  const STATUS_TXT = { online: "Online", down: "Shut down", local: "Runs on demand" };
+
+  // ---------- index ----------
+  const PJ = {};
+  WORLD.projects.forEach(p => { PJ[p.id] = p; p.subs = []; p.tasks = []; p.notes = []; });
+  WORLD.projects.forEach(p => {
+    if (p.par && PJ[p.par]) PJ[p.par].subs.push(p);
+    p.state = p.st === "ip" ? "active" : p.st === "done" ? "done" : "idle"; p.pinned = !!p.pin;
+  });
+  // tasks: open ones go on the board; Done-but-not-archived ones wait in their own pile
+  function indexTasks() {
+    WORLD.projects.forEach(p => { p.tasks = []; p.doneTasks = []; });
+    WORLD.tasks.forEach(t => {
+      t.over = !t.done && !!t.due && days(t.due) < 0;
+      t.soon = !t.done && !!t.due && !t.over && days(t.due) <= 14;
+      t.stale = !t.done && !!t.d && t.d < "2026-01-01";
+      if (t.p && PJ[t.p]) (t.done ? PJ[t.p].doneTasks : PJ[t.p].tasks).push(t);
+    });
+  }
+  indexTasks();
+  const allDone = p => p.doneTasks.concat(...p.subs.map(allDone));
+  WORLD.notes.forEach(n => { if (PJ[n.p]) PJ[n.p].notes.push(n); });
+  const allTasks = p => p.tasks.concat(...p.subs.map(allTasks));
+  const allNotes = p => p.notes.concat(...p.subs.map(allNotes));
+  const totalTasks = p => (p.tt || 0) + p.subs.reduce((n, s) => n + totalTasks(s), 0);
+  const allAgents = p => [...new Set(p.ag.concat(...p.subs.map(allAgents)))];
+
+  // Six town slots. WORLD.areas fill them in order, so put your biggest Area first.
+  const TOWNS = [
+    { cx: 14, cy: 12, pr: 2, R: 10.5, roof: "#c8553d", roofD: "#9c3f2c" },   // slot 1: the big town
+    { cx: 47, cy: 9, pr: 1, R: 6.5, roof: "#d98e2b", roofD: "#a96c1c" },
+    { cx: 12, cy: 34, pr: 1, R: 6.5, roof: "#8a5cc4", roofD: "#6a4499" },
+    { cx: 28, cy: 35, pr: 1, R: 4.5, roof: "#caa12a", roofD: "#9b7a1c" },
+    { cx: 55, cy: 24, pr: 1, R: 4, roof: "#2f8fb0", roofD: "#226d87" },
+    { cx: 24, cy: 26, pr: 1, R: 4, roof: "#c25b8a", roofD: "#97446b" },
+  ];
+  const hashId = s => { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
+  function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  TOWNS.forEach((tw, i) => {
+    Object.assign(tw, WORLD.areas[i] || { id: "empty" + i, n: "Empty town", sign: "Empty", nid: "" });
+    tw.houses = WORLD.projects.filter(p => p.a === tw.id && !p.par);
+    tw.houses.forEach(p => {
+      const size = totalTasks(p) + allNotes(p).length + p.subs.length * 2;
+      p.town = tw; p.size = size; p.manor = size >= 12;
+      p.bw = p.manor ? 3 : 2; p.bh = p.manor ? 3 : 2; p.hasAnnex = !p.manor && p.subs.length > 0;
+      p.pinned = !!p.pin || p.subs.some(s => s.pin);
+    });
+  });
+  let areaTasks = [];
+  function houseStats() {
+    TOWNS.forEach(tw => tw.houses.forEach(p => {
+      const at = allTasks(p);
+      p.open = at.length; p.overN = at.filter(t => t.over).length; p.staleN = at.filter(t => t.stale).length; p.doneN = allDone(p).length;
+    }));
+    areaTasks = WORLD.tasks.filter(t => !t.done && (!t.p || !PJ[t.p]));
+  }
+  houseStats();
+  const orphanProjects = WORLD.projects.filter(p => !p.a);
+
+  // ---------- terrain ----------
+  const GRASS = 0, PATH = 1, WATER = 2, TREE = 3, BUILT = 4, PIER = 5;
+  const grid = Array.from({ length: GH }, () => new Array(GW).fill(GRASS));
+  const occ = Array.from({ length: GH }, () => new Array(GW).fill(0));
+  const inb = (x, y) => x >= 0 && y >= 0 && x < GW && y < GH;
+  const at = (x, y) => inb(x, y) ? grid[y][x] : GRASS;
+  const set = (x, y, v) => { if (inb(x, y) && grid[y][x] !== BUILT) grid[y][x] = v; };
+  const hline = (y, a, b) => { for (let x = Math.min(a, b); x <= Math.max(a, b); x++) set(x, y, PATH); };
+  const vline = (x, a, b) => { for (let y = Math.min(a, b); y <= Math.max(a, b); y++) set(x, y, PATH); };
+
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+    if (((x - 58) / 12) ** 2 + ((y - 44) / 13) ** 2 <= 1) grid[y][x] = WATER;
+    if (((x - 33) / 2.4) ** 2 + ((y - 7) / 3.2) ** 2 <= 1) grid[y][x] = WATER;
+  }
+  const KEEP = { x: 58, y: 2, w: 4, h: 4 }, CAMP = { x: 35, y: 39 }, CROSS = { x: 32, y: 17 };
+  for (let y = KEEP.y; y < KEEP.y + KEEP.h; y++) for (let x = KEEP.x; x < KEEP.x + KEEP.w; x++) grid[y][x] = BUILT;
+  for (let y = CAMP.y; y < CAMP.y + 2; y++) for (let x = CAMP.x; x < CAMP.x + 3; x++) grid[y][x] = BUILT;
+  TOWNS.forEach(tw => { for (let y = tw.cy - tw.pr; y <= tw.cy + tw.pr; y++) for (let x = tw.cx - tw.pr; x <= tw.cx + tw.pr; x++) set(x, y, PATH); });
+  hline(18, 14, 55); vline(14, 12, 18); vline(47, 9, 18); vline(55, 18, 24);
+  vline(32, 18, 34); hline(34, 12, 32);
+  vline(40, 18, 36); hline(36, 40, 48);
+  hline(26, 24, 32);
+  for (let x = 49; x <= 51; x++) grid[36][x] = PIER;
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (grid[y][x] !== GRASS) occ[y][x] = grid[y][x] === BUILT ? 1 : 0;
+
+  // organic placement: houses scattered around each plaza, bigger ones closer in
+  function fits(x, y, w, h) {
+    for (let yy = y - 1; yy <= y + h + 1; yy++) for (let xx = x - 1; xx <= x + w; xx++) {
+      if (xx < 1 || yy < 1 || xx > GW - 2 || yy > GH - 2) return false;
+      if (occ[yy][xx]) return false;
+      const g = grid[yy][xx], foot = xx >= x && xx < x + w && yy >= y && yy < y + h, door = yy === y + h && xx >= x && xx < x + w;
+      if (foot && g !== GRASS) return false;
+      if (door && g !== GRASS && g !== PATH) return false;
+      if (g === WATER || g === PIER || g === BUILT) return false;
+    }
+    return true;
+  }
+  TOWNS.forEach(tw => {
+    const rng = mulberry(hashId(tw.id) + 7);
+    // houses placed on an earlier sync keep their spot; new ones find room around the plaza
+    const order = tw.houses.slice().sort((a, b) => (!!S.place[b.id] - !!S.place[a.id]) || (b.manor - a.manor) || (b.size - a.size));
+    order.forEach(p => {
+      const w = p.bw + (p.hasAnnex ? 1 : 0), h = p.bh, prev = S.place[p.id];
+      if (prev && fits(prev.x, prev.y, w, h)) { p.bx = prev.x; p.by = prev.y; }
+      else for (let R = tw.R; R < tw.R + 6; R += 1) {
+        const cands = [];
+        for (let y = Math.floor(tw.cy - R - 2); y <= tw.cy + R; y++) for (let x = Math.floor(tw.cx - R - 2); x <= tw.cx + R; x++) {
+          const d = Math.hypot((x + w / 2 - tw.cx - 0.5), (y + h / 2 - tw.cy - 0.5) * 1.15);
+          if (d < tw.pr + 1.6 || d > R) continue;
+          cands.push({ x, y, k: d + rng() * 2.2 });
+        }
+        cands.sort((a, b) => a.k - b.k);
+        const hit = cands.find(c => fits(c.x, c.y, w, h));
+        if (hit) { p.bx = hit.x; p.by = hit.y; break; }
+      }
+      if (p.bx == null) return;
+      S.place[p.id] = { x: p.bx, y: p.by };
+      for (let y = p.by; y < p.by + h; y++) for (let x = p.bx; x < p.bx + w; x++) { grid[y][x] = BUILT; occ[y][x] = 1; }
+      p.annex = p.hasAnnex ? { x: p.bx + p.bw, y: p.by + h - 1 } : null;
+      const doors = p.manor ? [p.bx + 1] : [p.bx, p.bx + 1];
+      doors.forEach(x => { set(x, p.by + h, PATH); occ[p.by + h][x] = 1; });
+    });
+  });
+  store.set("place.v1", S.place);
+
+  const rnd = mulberry(11);
+  const nearTown = (x, y) => TOWNS.some(tw => Math.hypot(x - tw.cx, (y - tw.cy) * 1.15) < tw.R + 2)
+    || (x >= KEEP.x && x < KEEP.x + KEEP.w && y >= KEEP.y - 1 && y <= KEEP.y + KEEP.h) || (x >= CROSS.x - 1 && x <= CROSS.x + 2 && y >= CROSS.y - 1 && y <= CROSS.y + 1)
+    || (x >= 44 && y >= 31) || (x >= CAMP.x - 2 && x <= CAMP.x + 4 && y >= CAMP.y - 2 && y <= CAMP.y + 3);
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+    if (grid[y][x] !== GRASS) continue;
+    let clear = true;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const g = at(x + dx, y + dy); if (g !== GRASS && g !== TREE) clear = false; }
+    if (!clear) continue;
+    const edge = x <= 1 || x >= GW - 2 || y <= 0 || y >= GH - 2;
+    const p = nearTown(x, y) ? 0.04 : edge ? 0.55 : (y > 38 && x < 30) ? 0.45 : 0.15;
+    if (rnd() < p) grid[y][x] = TREE;
+  }
+
+  // ---------- static background ----------
+  const px = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+  const BOOKS = ["#c8553d", "#3c5a9a", "#e3b341", "#4e8f5a", "#8a5cc4", "#d9895b", "#e9e0c9", "#5a8fa8"];
+/*__THEMES__*/
+  const bg = document.createElement("canvas"); bg.width = W; bg.height = H;
+  const b = bg.getContext("2d");
+  const nr = mulberry(42);
+  px(b, 0, 0, W, H, "#5aa04a");
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const r = nr();
+    if (r < 0.14) px(b, x, y, 1, 1, "#519443"); else if (r < 0.19) px(b, x, y, 1, 1, "#67ae55");
+    else if (r < 0.1935) px(b, x, y, 1, 1, "#f4e27a"); else if (r < 0.1965) px(b, x, y, 1, 1, "#f5a6c8");
+  }
+  const soft = g => g === GRASS || g === TREE;
+  for (let ty = 0; ty < GH; ty++) for (let tx = 0; tx < GW; tx++) {
+    const g = grid[ty][tx], X = tx * T, Y = ty * T;
+    if (g === PATH) {
+      px(b, X, Y, T, T, "#d8b777");
+      for (let i = 0; i < 10; i++) px(b, X + Math.floor(nr() * T), Y + Math.floor(nr() * T), 1, 1, "#c6a163");
+      if (soft(at(tx, ty - 1))) px(b, X, Y, T, 1, "#b99656");
+      if (soft(at(tx, ty + 1))) px(b, X, Y + T - 1, T, 1, "#b99656");
+      if (soft(at(tx - 1, ty))) px(b, X, Y, 1, T, "#b99656");
+      if (soft(at(tx + 1, ty))) px(b, X + T - 1, Y, 1, T, "#b99656");
+    } else if (g === WATER || g === PIER) {
+      px(b, X, Y, T, T, "#3f82c9");
+      for (let i = 0; i < 3; i++) px(b, X + Math.floor(nr() * 6), Y + Math.floor(nr() * T), 2, 1, "#5b9bd8");
+      const wet = v => v === WATER || v === PIER;
+      if (!wet(at(tx, ty - 1))) px(b, X, Y, T, 1, "#d9c98f");
+      if (!wet(at(tx, ty + 1))) px(b, X, Y + T - 1, T, 1, "#d9c98f");
+      if (!wet(at(tx - 1, ty))) px(b, X, Y, 1, T, "#d9c98f");
+      if (!wet(at(tx + 1, ty))) px(b, X + T - 1, Y, 1, T, "#d9c98f");
+      if (g === PIER) { px(b, X, Y + 1, T, 6, "#8a6a44"); for (let i = 0; i < T; i += 3) px(b, X + i, Y + 1, 1, 6, "#6b4a2b"); px(b, X + 1, Y + 7, 1, 1, "#4a3220"); px(b, X + 6, Y + 7, 1, 1, "#4a3220"); }
+    }
+  }
+  // plaza wells
+  TOWNS.forEach(tw => { const X = tw.cx * T, Y = tw.cy * T; px(b, X, Y + 1, 8, 6, "#7f8aa0"); px(b, X + 1, Y + 2, 6, 4, "#3f82c9"); px(b, X + 2, Y + 3, 2, 1, "#a7d0f2"); });
+  for (let ty = 0; ty < GH; ty++) for (let tx = 0; tx < GW; tx++) if (grid[ty][tx] === TREE) {
+    const X = tx * T, Y = ty * T, pine = nr() < 0.3;
+    px(b, X + 1, Y + 7, 7, 1, "rgba(0,0,0,.22)");
+    px(b, X + 3, Y + 5, 2, 3, "#6b4a2b");
+    if (pine) { for (let i = 0; i < 6; i++) px(b, X + 4 - Math.floor(i / 2), Y + i, 1 + Math.floor(i / 2) * 2, 1, i % 2 ? "#23532c" : "#2c6437"); }
+    else {
+      px(b, X + 1, Y + 1, 6, 5, "#2f6e3b"); px(b, X + 2, Y, 4, 1, "#2f6e3b"); px(b, X, Y + 2, 1, 3, "#2f6e3b"); px(b, X + 7, Y + 2, 1, 3, "#2f6e3b");
+      px(b, X + 2, Y + 1, 2, 2, "#3f8a4a"); px(b, X + 5, Y + 4, 2, 2, "#23532c"); px(b, X + 1, Y + 5, 6, 1, "#23532c");
+    }
+  }
+  // flowers by the doors
+  TOWNS.forEach(tw => tw.houses.forEach(p => {
+    if (p.bx == null) return;
+    const X = p.bx * T, Y = (p.by + p.bh) * T, fl = ["#f4e27a", "#f5a6c8", "#ffffff", "#e2574c"], rr = mulberry(hashId(p.id));
+    for (let i = 0; i < 3; i++) { const fx = X - 3 + Math.floor(rr() * 3), fy = Y + 1 + Math.floor(rr() * 5); if (at(Math.floor(fx / T), Math.floor(fy / T)) === GRASS) { px(b, fx, fy + 1, 1, 2, "#3f8a4a"); px(b, fx, fy, 1, 1, fl[i % 4]); } }
+  }));
+  // Atlas Keep: shut down, now a ruin in the far corner
+  (function ruins() {
+    const x0 = KEEP.x * T, y0 = KEEP.y * T, c = b, rr = mulberry(99);
+    const ST = "#6e6a78", STL = "#8a8694", STD = "#4a4652", MOSS = "#4e7a3a", IVY = "#3f6a2e";
+    px(c, x0 - 2, y0 + 30, 36, 2, "rgba(0,0,0,.25)");
+    // left tower: standing but roofless, top broken
+    px(c, x0, y0 + 6, 8, 25, STD); px(c, x0 + 1, y0 + 7, 6, 24, ST);
+    px(c, x0, y0 + 4, 2, 2, STD); px(c, x0 + 3, y0 + 5, 2, 1, STD); px(c, x0 + 6, y0 + 3, 2, 3, STD);
+    px(c, x0 + 3, y0 + 12, 2, 3, "#15141c"); px(c, x0 + 3, y0 + 20, 2, 3, "#15141c");
+    // wall with a breach
+    px(c, x0 + 8, y0 + 16, 7, 15, STD); px(c, x0 + 9, y0 + 17, 5, 14, ST);
+    px(c, x0 + 18, y0 + 22, 6, 9, STD); px(c, x0 + 19, y0 + 23, 4, 8, ST);
+    for (let i = 0; i < 3; i++) px(c, x0 + 9 + i * 2, y0 + 15, 1, 1, STD);
+    // right tower: collapsed to a stump
+    px(c, x0 + 24, y0 + 18, 8, 13, STD); px(c, x0 + 25, y0 + 19, 6, 12, ST); px(c, x0 + 24, y0 + 17, 3, 1, STD); px(c, x0 + 29, y0 + 16, 3, 2, STD);
+    // cracks and brick lines
+    [[x0 + 2, y0 + 16], [x0 + 5, y0 + 25], [x0 + 11, y0 + 22], [x0 + 27, y0 + 24]].forEach(([x, y]) => { px(c, x, y, 1, 2, STD); px(c, x + 1, y + 2, 1, 2, STD); });
+    for (let y = y0 + 10; y < y0 + 30; y += 4) px(c, x0 + 1, y, 6, 1, STL);
+    // rubble
+    for (let i = 0; i < 22; i++) { const x = x0 + 6 + Math.floor(rr() * 24), y = y0 + 26 + Math.floor(rr() * 7), s = 1 + Math.floor(rr() * 2); px(c, x, y, s + 1, s, rr() < 0.5 ? ST : STL); }
+    // ivy and moss
+    for (let i = 0; i < 26; i++) { const x = x0 + Math.floor(rr() * 32), y = y0 + 8 + Math.floor(rr() * 22); if (x < x0 + 8 || (x > x0 + 8 && x < x0 + 15 && y > y0 + 16) || (x > x0 + 24 && y > y0 + 18)) px(c, x, y, 1, 1 + Math.floor(rr() * 2), rr() < 0.5 ? MOSS : IVY); }
+    // torn banner on the left tower
+    px(c, x0 + 6, y0 - 1, 1, 5, "#5c4630"); px(c, x0 + 7, y0 - 1, 3, 2, "#6e5a5a"); px(c, x0 + 7, y0 + 1, 1, 1, "#6e5a5a");
+  })();
+  // crossroads signpost where the keep used to stand
+  (function crossroads() {
+    const X = CROSS.x * T, Y = CROSS.y * T;
+    px(b, X + 3, Y + 1, 2, 7, "#5c3b22");
+    px(b, X - 2, Y + 1, 7, 2, "#a07c50"); px(b, X - 3, Y + 2, 1, 1, "#a07c50");
+    px(b, X + 3, Y + 4, 8, 2, "#a07c50"); px(b, X + 11, Y + 5, 1, 1, "#a07c50");
+    px(b, X + 2, Y + 7, 4, 1, "rgba(0,0,0,.25)");
+  })();
+  // party tent camp (orphans)
+  (function camp() {
+    const X = CAMP.x * T, Y = CAMP.y * T;
+    px(b, X - 1, Y + 15, 22, 1, "rgba(0,0,0,.25)");
+    for (let i = 0; i < 12; i++) { const w = 1 + Math.floor(i * 0.6) * 2; for (let k = 0; k < w; k++) px(b, X + 7 - Math.floor(i * 0.6) + k, Y + 3 + i, 1, 1, (k >> 1) % 2 ? "#f4f0e6" : "#d9793f"); }
+    px(b, X + 6, Y + 10, 3, 5, "#3a1f12"); px(b, X + 7, Y, 1, 4, "#5c4630"); px(b, X + 8, Y, 3, 2, "#f2c14e");
+    px(b, X + 16, Y + 12, 6, 2, "#5c4630"); px(b, X + 15, Y + 13, 8, 1, "#6b6b6b");
+  })();
+
+  // ---------- sprites ----------
+  function drawCottage(c, x, y, p, roof, roofD, t, anim) {
+    const Q = (a, bb, w, hh, col) => px(c, x + a, y + bb, w, hh, col);
+    const key = themeOf(p), th = THEMES[key], idle = p.state === "idle", feat = th.feat;
+    Q(2, 16, 14, 1, "rgba(0,0,0,.25)"); Q(15, 9, 1, 7, "rgba(0,0,0,.18)");
+    const wall = idle ? "#d6c9a8" : th.wall[0], wallD = idle ? "#c2b491" : th.wall[1];
+    Q(1, 8, 14, 8, "#3a2a20"); Q(2, 9, 12, 6, wall); Q(11, 9, 3, 6, wallD);
+    if (!idle && feat === "timber") { Q(2, 12, 12, 1, "#7a5436"); Q(5, 9, 1, 6, "#7a5436"); Q(10, 9, 1, 6, "#7a5436"); }
+    if (!idle && feat === "brick") for (let r = 10; r < 15; r += 2) Q(2, r, 12, 1, wallD);
+    if (!idle && feat !== "bell") { const big = feat === "chimney"; Q(12, big ? 0 : 1, 3, big ? 6 : 5, "#3a2a20"); Q(13, big ? 0 : 1, 1, big ? 6 : 5, "#8c6b5a"); }
+    let rc = idle ? "#a58a63" : roof, rcd = idle ? "#8e744f" : roofD;
+    if (!idle && feat === "glassroof") { rc = "#a8e0c8"; rcd = "#86c4a8"; }
+    for (let i = idle ? 3 : 0; i < 8; i++) { const l = 7 - i, r = 8 + i; Q(l, i, r - l + 1, 1, rc); Q(8, i, r - 7, 1, rcd); Q(l, i, 1, 1, "#3a2a20"); Q(r, i, 1, 1, "#3a2a20"); }
+    if (!idle) for (let i = 2; i < 8; i += 2) Q(8 - i, i, 2 * i, 1, "rgba(0,0,0,.12)");
+    if (!idle && feat === "glassroof") for (let i = 3; i < 8; i += 2) Q(8 - i + 1, i, 2 * i - 2, 1, "#e6f6ee");
+    if (idle) { Q(7, 0, 2, 3, "#8e744f"); Q(4, 3, 8, 1, "#3a2a20"); }
+    const glass = feat === "glass" && !idle ? "#a7d0f2" : p.state === "active" ? "#ffd66b" : p.state === "done" ? "#9cc3e6" : "#6d6a5e";
+    if (feat !== "garagedoor" || idle) { Q(6, 11, 4, 5, "#3a2a20"); Q(7, 12, 2, 4, "#7a4e2c"); Q(8, 14, 1, 1, "#f2c14e"); }
+    if (feat !== "columns" || idle) {
+      Q(2, 10, 4, 4, "#3a2a20"); Q(3, 11, 2, 2, glass); Q(11, 10, 4, 4, "#3a2a20"); Q(12, 11, 2, 2, glass);
+      if (feat === "arch" && !idle) { Q(2, 10, 1, 1, wall); Q(5, 10, 1, 1, wall); Q(11, 10, 1, 1, wallD); Q(14, 10, 1, 1, wallD); }
+    }
+    if (p.state === "active" && feat !== "columns" && feat !== "awning") { Q(2, 14, 4, 1, "#6b4a2b"); Q(2, 13, 1, 1, "#e2574c"); Q(4, 13, 1, 1, "#f4e27a"); Q(11, 14, 4, 1, "#6b4a2b"); Q(12, 13, 1, 1, "#f5a6c8"); Q(14, 13, 1, 1, "#e2574c"); }
+    if (!idle) drawFeature(c, x, y, 16, feat, t, anim);
+    drawEmblem(c, x + 4, y + 1, th, false);
+    if (idle) { Q(0, 6, 1, 10, "#b58b52"); Q(15, 6, 1, 10, "#b58b52"); Q(0, 9, 16, 1, "#b58b52"); Q(0, 13, 16, 1, "#b58b52"); }
+    if (p.pinned) { Q(13, 9, 2, 5, "#3c5a9a"); Q(13, 14, 1, 1, "#3c5a9a"); Q(13, 11, 2, 1, "#f2c14e"); }
+    if (p.staleN) { Q(2, 9, 3, 1, "#cfd3dc"); Q(2, 10, 1, 2, "#cfd3dc"); Q(3, 10, 1, 1, "#aeb3bf"); }
+    decorate(c, x, y, p, 13, 7, t, anim, feat === "chimney");
+  }
+  function drawManor(c, x, y, p, roof, roofD, t, anim) {
+    const Q = (a, bb, w, hh, col) => px(c, x + a, y + bb, w, hh, col);
+    const key = themeOf(p), th = THEMES[key], idle = p.state === "idle", feat = th.feat;
+    Q(2, 24, 22, 1, "rgba(0,0,0,.25)"); Q(23, 10, 1, 14, "rgba(0,0,0,.18)");
+    const wall = idle ? "#d6c9a8" : th.wall[0], wallD = idle ? "#c2b491" : th.wall[1];
+    Q(18, -3, 3, 7, "#3a2a20"); Q(19, -3, 1, 7, "#8c6b5a");
+    Q(1, 9, 22, 15, "#3a2a20"); Q(2, 10, 20, 13, wall); Q(17, 10, 5, 13, wallD);
+    Q(2, 16, 20, 1, "rgba(0,0,0,.25)");
+    for (let i = 0; i < 9; i++) { const l = Math.max(0, 5 - i), r = Math.min(23, 18 + i); Q(l, i, r - l + 1, 1, i % 2 ? roofD : roof); Q(12, i, r - 11, 1, roofD); Q(l, i, 1, 1, "#3a2a20"); Q(r, i, 1, 1, "#3a2a20"); }
+    Q(5, 0, 14, 1, "#3a2a20");
+    const glass = p.state === "active" ? "#ffd66b" : p.state === "done" ? "#9cc3e6" : "#6d6a5e";
+    [[3, 11], [17, 11], [3, 18], [17, 18]].forEach(([a, bb]) => { Q(a, bb, 4, 4, "#3a2a20"); Q(a + 1, bb + 1, 2, 2, glass); });
+    [[8, 11], [13, 11]].forEach(([a, bb]) => { Q(a, bb, 3, 4, "#3a2a20"); Q(a + 1, bb + 1, 1, 2, glass); });
+    Q(9, 17, 6, 7, "#3a2a20"); Q(10, 18, 2, 6, "#7a4e2c"); Q(12, 18, 2, 6, "#6a4226"); Q(11, 21, 1, 1, "#f2c14e"); Q(12, 21, 1, 1, "#f2c14e");
+    Q(8, 18, 1, 2, "#f2c14e"); Q(15, 18, 1, 2, "#f2c14e");
+    if (!idle) drawFeature(c, x, y, 24, feat, t, anim);
+    drawEmblem(c, x + 7, y, th, true);
+    if (p.pinned) { Q(2, 11, 2, 6, "#3c5a9a"); Q(2, 13, 2, 1, "#f2c14e"); }
+    if (idle) { Q(0, 8, 1, 16, "#b58b52"); Q(23, 8, 1, 16, "#b58b52"); Q(0, 13, 24, 1, "#b58b52"); Q(0, 19, 24, 1, "#b58b52"); }
+    decorate(c, x, y, p, 19, 11, t, anim, false, -3);
+  }
+  function decorate(c, x, y, p, chimX, markX, t, anim, always, chimTop = 0) {
+    const Q = (a, bb, ww, hh, col) => px(c, x + a, y + bb, ww, hh, col);
+    if (p.state === "done") { const wv = anim ? Math.floor(t * 3) % 2 : 0; Q(1, -4, 1, 8, "#5c4630"); Q(2, -4, 4 - wv, 3, "#f2c14e"); Q(2, -2, 3 - wv, 1, "#c9962a"); }
+    if (p.state === "active" || always) for (let i = 0; i < 3; i++) {
+      const ph = ((anim ? t * 0.45 : 0.2) + i / 3) % 1, sz = ph < 0.4 ? 2 : 1;
+      c.fillStyle = `rgba(236,236,242,${(0.85 * (1 - ph)).toFixed(2)})`;
+      c.fillRect(x + chimX + Math.round(Math.sin(ph * 5 + i) * 1.5), y + chimTop + Math.round(-1 - ph * 9), sz, sz);
+    }
+    if (p.open) {
+      const bo = anim ? Math.round(Math.sin(t * 3 + (p.bx || 0))) : 0, col = p.overN ? "#ff5a4a" : "#ffd23f";
+      Q(markX - 1, -11 + bo, 4, 9, "#2a1d10"); Q(markX, -10 + bo, 2, 4, col); Q(markX, -5 + bo, 2, 2, col);
+    }
+  }
+  function drawAnnex(c, x, y, subs) {
+    const Q = (a, bb, w, hh, col) => px(c, x + a, y + bb, w, hh, col);
+    Q(1, 8, 7, 1, "rgba(0,0,0,.25)");
+    for (let i = 0; i < 4; i++) Q(3 - i, i, 2 + i * 2, 1, "#6b4a2b");
+    Q(0, 4, 8, 4, "#3a2a20"); Q(1, 4, 6, 3, "#c9a36b"); Q(3, 5, 2, 3, "#5c3b22");
+    if (subs.length > 1) Q(6, 0, 2, 2, "#f2c14e");
+    if (subs.some(s => s.st === "done")) { Q(7, -3, 1, 4, "#5c4630"); Q(8, -3, 2, 2, "#f2c14e"); }
+  }
+  const PERSON = ["_HHH_", "_SSS_", "_ESE_", "CCCCC", "SCCCS", "_CCC_", "_L_L_", "_B_B_"];
+  const PERSON2 = ["_HHH_", "_SSS_", "_ESE_", "CCCCC", "SCCCS", "_CCC_", "_LL__", "_BB__"];
+  function drawPerson(c, x, y, a, s, alt, opt = {}) {
+    const grey = opt.down, color = COLORS[a] || "#aaa";
+    const map = { H: grey ? "#6e6a80" : "#4a3428", S: grey ? "#b9aa98" : "#f1c9a0", E: "#2a2438", C: grey ? "#57536a" : color, L: "#3b3552", B: "#221d33" };
+    px(c, x + s, y + 8 * s, 3 * s, s, "rgba(0,0,0,.22)");
+    (alt ? PERSON2 : PERSON).forEach((row, j) => [...row].forEach((ch, i) => { if (ch !== "_") px(c, x + i * s, y + j * s, s, s, map[ch]); }));
+    if (grey) { px(c, x + s, y + 2 * s, s, s, "#57536a"); px(c, x + 3 * s, y + 2 * s, s, s, "#57536a"); }
+    drawLook(c, x, y, a, s, grey);
+  }
+  const unreadMail = () => S.mail.msgs.filter(m => m.status === "Unread").length;
+  function drawShip(c, x, y, t, anim) {
+    const bo = anim ? Math.round(Math.sin(t * 1.6)) : 0, Y = y + bo;
+    const Q = (a, bb, w, hh, col) => px(c, x + a, Y + bb, w, hh, col);
+    for (let i = 0; i < 8; i++) Q(4 + i, 21 + i, 44 - i * 2, 1, i < 2 ? "#8a6a44" : i < 6 ? "#6b4a2b" : "#4a3220");
+    Q(2, 20, 46, 2, "#a07c50"); Q(2, 19, 46, 1, "#3a2a20");
+    for (let i = 0; i < 5; i++) Q(10 + i * 7, 24, 3, 2, "#f2c14e");
+    Q(32, 13, 12, 6, "#3a2a20"); Q(33, 14, 10, 5, "#a07c50"); Q(35, 15, 2, 2, "#ffd66b"); Q(39, 15, 2, 2, "#ffd66b");
+    Q(20, -2, 2, 22, "#5c4630");
+    const sw = anim ? Math.round(Math.sin(t * 2)) : 0;
+    Q(9, 1, 24 + sw, 15, "#3a2a20"); Q(10, 2, 22 + sw, 13, "#f3ead6"); Q(10, 11, 22 + sw, 4, "#e1d5ba");
+    Q(14, 5, 3, 1, "#f2c14e"); Q(13, 6, 5, 1, "#f2c14e"); Q(17, 7, 7, 2, "#c9962a"); Q(23, 6, 5, 1, "#f2c14e"); Q(25, 5, 3, 1, "#f2c14e");
+    const pf = anim ? Math.floor(t * 4) % 2 : 0; Q(22, -2, 6 - pf, 2, "#b5a1e6"); Q(22, 0, 4 - pf, 1, "#8f7cc8");
+    Q(44, 17, 6, 1, "#5c4630"); Q(46, 15, 1, 3, "#5c4630");
+    // one cargo crate on deck per unread HERMES message (up to 4)
+    for (let i = 0; i < Math.min(4, unreadMail()); i++) { Q(4 + i * 5 - (i > 1 ? 10 : 0), i > 1 ? 11 : 15, 4, 4, "#8a5a2a"); Q(4 + i * 5 - (i > 1 ? 10 : 0), i > 1 ? 11 : 15, 4, 1, "#c9962a"); Q(5 + i * 5 - (i > 1 ? 10 : 0), i > 1 ? 12 : 16, 2, 2, "#6b4020"); }
+    const wv = anim ? Math.floor(t * 2) % 4 : 0;
+    for (let i = 0; i < 6; i++) px(c, x + 2 + i * 9 + wv, y + 30, 4, 1, "#a7d0f2");
+  }
+
+  // ---------- map canvas + targets ----------
+  const world = document.getElementById("world"), wc = world.getContext("2d");
+  const mapEl = document.getElementById("map");
+  const pct = (v, tot) => (v / tot * 100) + "%";
+  const SHIP = { x: 52 * T, y: 34 * T - 4 };
+  const DEFAULT_ID = WORLD.projects[0].id;
+  let sel = S.sel ? { ...S.sel } : { type: "house", id: DEFAULT_ID, view: "home" };
+  if (sel.type === "house" && !PJ[sel.id]) sel = { type: "house", id: DEFAULT_ID, view: "home" };
+  if (sel.type === "house" && sel.view === "book" && !WORLD.notes.some(n => n.id === sel.arg && !n.sealed)) sel.view = "library";
+  if (sel.type === "agent" && sel.back && sel.back.type === "house" && !PJ[sel.back.id]) sel.back = undefined;
+
+  function addHit(name, x, y, w, h, onClick) {
+    const btn = document.createElement("button");
+    btn.className = "hit"; btn.dataset.name = name; btn.setAttribute("aria-label", name);
+    Object.assign(btn.style, { left: pct(x, W), top: pct(y, H), width: pct(w, W), height: pct(h, H) });
+    btn.addEventListener("click", onClick); mapEl.appendChild(btn); return btn;
+  }
+  function addSign(html, label, x, y, onClick, extra = "") {
+    const s = document.createElement("button");
+    s.className = "sign " + extra; s.innerHTML = html; s.setAttribute("aria-label", label);
+    Object.assign(s.style, { left: pct(x * T, W), top: pct(y * T, H) });
+    s.addEventListener("click", onClick); mapEl.appendChild(s); return s;
+  }
+  function updateSigns() {
+    TOWNS.forEach(tw => {
+      const open = tw.houses.reduce((n, h) => n + h.open, 0) + areaTasks.filter(t => t.a === tw.id).length;
+      tw.signEl.innerHTML = `${esc(tw.short || tw.sign)}${open ? `<b>${open}</b>` : ""}`;
+      tw.signEl.setAttribute("aria-label", `${tw.n} town, ${open} open quests`);
+    });
+    const lost = orphanProjects.length + areaTasks.length;
+    campSign.innerHTML = `Lost &amp; Found${lost ? ` <b>${lost}</b>` : ""}`;
+    const n = unreadMail();
+    shipSign.innerHTML = `HERMES${n ? ` <b>${n}</b>` : ""}`;
+    shipSign.setAttribute("aria-label", `HERMES ship, ${n} unread ${n === 1 ? "message" : "messages"}`);
+  }
+  TOWNS.forEach(tw => {
+    tw.houses.forEach(p => {
+      if (p.bx == null) return;
+      addHit(`${p.n} · ${THEMES[themeOf(p)].label}`, p.bx * T, p.by * T, (p.bw + (p.annex ? 1 : 0)) * T, p.bh * T, () => go({ type: "house", id: p.id, view: "home" }));
+    });
+    tw.signEl = addSign("", tw.n, tw.cx + 0.5, tw.cy + 0.5, () => go({ type: "town", id: tw.id }));
+  });
+  addHit("Atlas Keep ruins", KEEP.x * T, (KEEP.y - 1) * T, KEEP.w * T, (KEEP.h + 1) * T, () => go({ type: "keep" }));
+  addSign("Keep ruins", "Atlas Keep ruins, shut down", KEEP.x + 1.4, KEEP.y + 5.2, () => go({ type: "keep" }), "stone");
+  addHit("HERMES", SHIP.x, SHIP.y - 2, 50, 34, () => go({ type: "ship" }));
+  const shipSign = addSign("HERMES", "HERMES ship", 55, 39.3, () => go({ type: "ship" }), "sea");
+  addHit("Lost & Found · party tent", CAMP.x * T - 4, CAMP.y * T, 30, 16, () => go({ type: "camp" }));
+  const campSign = addSign("", "Lost and Found camp", CAMP.x + 1.5, CAMP.y + 2.9, () => go({ type: "camp" }), "lost");
+  updateSigns();
+
+  const tc = (x, y) => [x * T + 4, y * T + 4];
+  const WALKERS = [
+    { a: "hermes", pts: [tc(48, 36), tc(40, 36), tc(40, 18), tc(14, 18), tc(14, 14)], sp: 11 },
+    { a: "hermes", pts: [tc(48, 36), tc(40, 36), tc(40, 18), tc(32, 18), tc(32, 34), tc(13, 34)], sp: 10, off: 160 },
+    { a: "voice_lab", pts: [tc(14, 14), tc(14, 18), tc(30, 18)], sp: 6 },
+    { a: "recruiter", pts: [tc(16, 12), tc(12, 12), tc(12, 10), tc(16, 10)], sp: 4, off: 20 },
+    { a: "career", pts: [tc(14, 18), tc(22, 18)], sp: 4, off: 50 },
+    { a: "philosophy", pts: [tc(47, 10), tc(47, 17)], sp: 3 },
+    { a: "drawing", pts: [tc(13, 34), tc(20, 34)], sp: 4, off: 20 },
+    { a: "cooking", pts: [tc(11, 33), tc(11, 35), tc(13, 35)], sp: 3, off: 5 },
+    { a: "architect", pts: [tc(36, 18), tc(46, 18)], sp: 5, off: 10 },
+  ];
+  WALKERS.forEach(w => { w.segs = []; w.len = 0; for (let i = 1; i < w.pts.length; i++) { const d = Math.hypot(w.pts[i][0] - w.pts[i - 1][0], w.pts[i][1] - w.pts[i - 1][1]); w.segs.push(d); w.len += d; } w.off = w.off || 0; });
+  function walkerPos(w, t) {
+    const raw = (t * w.sp + w.off) % (2 * w.len), out = raw < w.len, d = out ? raw : 2 * w.len - raw;
+    let acc = 0;
+    for (let i = 0; i < w.segs.length; i++) {
+      if (d <= acc + w.segs[i]) { const f = (d - acc) / w.segs[i], a = w.pts[i], bb = w.pts[i + 1]; return { x: a[0] + (bb[0] - a[0]) * f, y: a[1] + (bb[1] - a[1]) * f, out }; }
+      acc += w.segs[i];
+    }
+    const e = w.pts[w.pts.length - 1]; return { x: e[0], y: e[1], out };
+  }
+
+  function drawWorld(t, anim) {
+    wc.drawImage(bg, 0, 0);
+    const items = [];
+    TOWNS.forEach(tw => tw.houses.forEach(p => {
+      if (p.bx == null) return;
+      items.push({ y: (p.by + p.bh) * T, draw: () => (p.manor ? drawManor : drawCottage)(wc, p.bx * T, p.by * T, p, tw.roof, tw.roofD, t, anim) });
+      if (p.annex) items.push({ y: (p.annex.y + 1) * T, draw: () => drawAnnex(wc, p.annex.x * T, p.annex.y * T, p.subs) });
+    }));
+    WALKERS.forEach((w, i) => {
+      const p = walkerPos(w, anim ? t : 5 + i * 7);
+      if (p.x > KEEP.x * T - 2 && p.x < (KEEP.x + KEEP.w) * T + 2 && p.y > KEEP.y * T && p.y < (KEEP.y + KEEP.h) * T + 2) return;
+      const x = Math.round(p.x - 2), y = Math.round(p.y - 7), alt = anim && Math.floor(t * 5 + i) % 2;
+      items.push({ y: p.y, draw: () => { drawPerson(wc, x, y, w.a, 1, alt); } });
+    });
+    items.sort((a, c) => a.y - c.y).forEach(it => it.draw());
+    drawShip(wc, SHIP.x, SHIP.y, t, anim);
+    // crows circling the ruins
+    for (let i = 0; i < 2; i++) {
+      const a = (anim ? t * 0.8 : 1) + i * Math.PI, cx = KEEP.x * T + 16 + Math.round(Math.cos(a) * 14), cy = KEEP.y * T - 2 + Math.round(Math.sin(a) * 5), fl = anim ? Math.floor(t * 6 + i) % 2 : 0;
+      px(wc, cx, cy, 1, 1, "#1a1a20"); px(wc, cx - 1, cy - fl, 1, 1, "#1a1a20"); px(wc, cx + 1, cy - fl, 1, 1, "#1a1a20");
+    }
+    const fx = CAMP.x * T + 17, fy = CAMP.y * T + 11, f = anim ? Math.floor(t * 8) % 3 : 0;
+    px(wc, fx, fy - 1 - f % 2, 2, 2 + f % 2, "#e2574c"); px(wc, fx + 2, fy - f, 2, 1 + f, "#f08a4b"); px(wc, fx + 1, fy, 2, 1, "#ffd23f");
+    if (sel.type === "house") {
+      const p = PJ[sel.id], top = p.par ? PJ[p.par] : p;
+      if (top && top.town && top.bx != null) {
+        const x = top.bx * T - 2, y = top.by * T - 2, w = (top.bw + (top.annex ? 1 : 0)) * T + 4, h = top.bh * T + 4;
+        const a = anim ? 0.55 + 0.45 * Math.sin(t * 4) : 1;
+        wc.fillStyle = `rgba(242,193,78,${a.toFixed(2)})`;
+        wc.fillRect(x, y, w, 1); wc.fillRect(x, y + h - 1, w, 1); wc.fillRect(x, y, 1, h); wc.fillRect(x + w - 1, y, 1, h);
+      }
+    }
+  }
+
+  // ---------- interior ----------
+  const IW = 192, IH = 112;
+  const residentSlots = n => Array.from({ length: Math.min(n, 6) }, (_, i) => ({ x: Math.round(40 + (i + 0.5) * (104 / Math.min(n, 6)) - 5), y: 76 }));
+  function drawInterior(c, p, t, anim) {
+    const key = themeOf(p), th = THEMES[key];
+    room(c, th.in, hashId(p.id));
+    shelfAndBoard(c, th.in, allNotes(p), allTasks(p));
+    if (p.pinned) { px(c, 6, 2, 42, 2, "#3c5a9a"); px(c, 25, 2, 4, 5, "#3c5a9a"); px(c, 26, 3, 2, 2, "#f2c14e"); }
+    SCENES[key](c, t, anim && p.state !== "idle", p);
+    drawStateOverlay(c, p, t, anim);
+    const ag = allAgents(p);
+    residentSlots(ag.length).forEach((s, i) => {
+      const a = ag[i], down = agentStatus(a) === "down", alt = anim && !down && (Math.floor(t * 2 + i) % 2);
+      drawPerson(c, s.x, s.y, a, 2, alt, { down });
+      if (down) { const ph = anim ? (t * 0.5 + i * 0.3) % 1 : 0.4; c.fillStyle = `rgba(230,230,245,${(1 - ph).toFixed(2)})`; const zx = s.x + 10 + Math.round(ph * 4), zy = s.y - 2 - Math.round(ph * 8); c.fillRect(zx, zy, 3, 1); c.fillRect(zx + 1, zy + 1, 1, 1); c.fillRect(zx, zy + 2, 3, 1); }
+    });
+  }
+
+  // ---------- avatars & emblems as images ----------
+  const AV = {}, EMB = {};
+  function avatar(a) {
+    if (AV[a]) return AV[a];
+    const cv = document.createElement("canvas"); cv.width = 12; cv.height = 14;
+    drawPerson(cv.getContext("2d"), 3, 5, a, 1, false, { down: agentStatus(a) === "down" });
+    return (AV[a] = cv.toDataURL());
+  }
+  function emblem(key) {
+    if (EMB[key]) return EMB[key];
+    const cv = document.createElement("canvas"); cv.width = 7; cv.height = 7;
+    drawEmblem(cv.getContext("2d"), 0, 0, THEMES[key], false);
+    return (EMB[key] = cv.toDataURL());
+  }
+
+  // ---------- panel ----------
+  const panel = document.getElementById("panel");
+  let icv = null, icvProject = null;
+  const STATE_TXT = { active: "In progress", done: "Done", idle: "Not started" };
+  const PR_TXT = { h: "High", m: "Medium", l: "Low" };
+  const agentChip = (a, back) => { const st = agentStatus(a); return `<button class="agent ${st === "down" ? "down" : ""}" data-agent="${a}"><img class="av" src="${avatar(a)}" alt="">${esc(a)} <small>${STATUS_TXT[st]}</small></button>`; };
+  function wireAgents(back) { panel.querySelectorAll("[data-agent]").forEach(el => el.addEventListener("click", () => go({ type: "agent", id: el.dataset.agent, back }))); }
+  function wireLinks() {
+    panel.querySelectorAll("[data-go]").forEach(el => el.addEventListener("click", () => go(JSON.parse(el.dataset.go))));
+  }
+  const goAttr = s => `data-go='${esc(JSON.stringify(s)).replace(/'/g, "&#39;")}'`;
+  const backBtn = (label, s) => `<button class="back" ${goAttr(s)}>← ${esc(label)}</button>`;
+
+  function questCard(tk, showProj) {
+    const cls = tk.over ? "over" : tk.soon ? "soon" : "";
+    let due = "";
+    if (tk.due) { const d = days(tk.due); due = `<span class="due">${d < 0 ? `${-d} days overdue` : d === 0 ? "due today" : `in ${d} days`}</span>`; }
+    else if (tk.d) due = `<span class="due">planned ${fmtDate(tk.d)}</span>`;
+    const proj = showProj && tk.p && PJ[tk.p] ? `<span>${PJ[tk.p].par ? "Shed: " : ""}<span style="unicode-bidi:plaintext">${esc(PJ[tk.p].n)}</span></span>` : "";
+    if (tk.done) { due = `<span class="due" style="background:#4d8a40;color:#fff">Done</span>`; }
+    const busy = pending.has(tk.id);
+    const act = mcpApi ? `<button class="qbtn ${tk.done ? "hot" : ""}" data-archive="${tk.id}" ${busy ? "disabled" : ""}>${busy ? "Archiving…" : "Archive"}</button>` : "";
+    return `<div class="quest ${cls} ${tk.done ? "donecard" : ""}"><span class="gems ${tk.pr || ""}" title="Priority: ${PR_TXT[tk.pr] || "none"}"><i></i><i></i><i></i></span>
+      <span class="qt">${esc(tk.t)}</span>${due}
+      <span class="qm">${tk.st === "ip" ? "<span>In progress</span>" : ""}${tk.due ? `<span>due ${fmtDate(tk.due)}</span>` : ""}${tk.stale ? "<span>Untouched since 2025</span>" : ""}${proj}<a href="${nurl(tk.id)}" target="_blank" rel="noopener">Open in Notion</a>${act}</span></div>`;
+  }
+  function questLog(p) {
+    const at = allTasks(p), waiting = allDone(p), total = Math.max(totalTasks(p), at.length + waiting.length), done = Math.max(0, total - at.length);
+    const ids = new Set([p.id, ...p.subs.map(s => s.id)]);
+    const mine = ARCHIVED.filter(t => ids.has(t.p));
+    const groups = [
+      ["Done in Notion, not archived yet", waiting],
+      ["Overdue", at.filter(t => t.over)],
+      ["Due in the next 14 days", at.filter(t => t.soon)],
+      ["Later", at.filter(t => t.due && !t.over && !t.soon)],
+      ["No due date", at.filter(t => !t.due)],
+    ];
+    const order = { h: 0, m: 1, l: 2, undefined: 3 };
+    groups.forEach(g => g[1].sort((a, c) => (a.due || "9").localeCompare(c.due || "9") || (order[a.pr] - order[c.pr])));
+    return `<div class="parchment">
+      <h3>Quest log <span>${at.length} open · ${done} completed</span></h3>
+      ${total ? `<div class="qbar" role="img" aria-label="${done} of ${total} quests completed"><i style="width:${done / total * 100}%"></i></div>` : ""}
+      ${at.length + waiting.length ? groups.filter(g => g[1].length).map(([name, list]) => `<div class="quests"><div class="muted">${name}</div>${list.map(tk => questCard(tk, p.subs.length > 0)).join("")}</div>`).join("") : `<div class="muted">No open quests. ${done ? "Everything here is done and archived." : "No tasks are linked to this project in Notion."}</div>`}
+      ${mine.length ? `<div class="quests"><div class="muted">Archived from here this visit</div>${mine.map(tk => `<div class="quest archived"><span></span><span class="qt">${esc(tk.t)}</span><button class="qbtn" data-restore="${tk.id}" ${pending.has(tk.id) ? "disabled" : ""}>${pending.has(tk.id) ? "Restoring…" : "Undo"}</button></div>`).join("")}</div>` : ""}
+      <div class="muted">${mcpApi ? "Archive ticks the task's <code>archive</code> box in Notion; Undo clears it. Archived quests count as completed." : "Completed quests are archived in Notion, so only their count shows here. Open this page in claude.ai to archive from here."}</div>
+    </div>`;
+  }
+  function library(p) {
+    const notes = allNotes(p), roots = notes.filter(n => !n.par || !notes.some(m => m.id === n.par));
+    const sealed = notes.filter(n => n.sealed).length;
+    const card = (n, child) => n.sealed
+      ? `<div class="book sealed ${child ? "child" : ""}"><span class="spine" style="background:#2e2a33"></span><span class="bt">Sealed book</span><span class="bm">private</span></div>`
+      : `<button class="book ${child ? "child" : ""}" ${goAttr({ type: "house", id: sel.id, view: "book", arg: n.id })}><span class="spine" style="background:${BOOKS[notes.indexOf(n) % BOOKS.length]}"></span><span class="bt">${esc(n.t)}</span><span class="bm">${n.ed ? fmtDate(n.ed) : ""}</span></button>`;
+    const tree = n => card(n, !!n.par) + notes.filter(m => m.par === n.id).map(tree).join("");
+    return `<div class="parchment">
+      <h3>Library <span>${notes.length} books${sealed ? ` · ${sealed} sealed` : ""}</span></h3>
+      ${notes.length ? `<div class="books">${roots.map(tree).join("")}</div>` : `<div class="muted">The shelf is empty. No notes in the Notes database point at this project.</div>`}
+      ${sealed ? `<div class="muted">Sealed books are personal notes. Their titles are hidden here; open them in Notion.</div>` : ""}
+    </div>`;
+  }
+  function bookPage(p, id) {
+    const n = WORLD.notes.find(x => x.id === id), kids = WORLD.notes.filter(m => m.par === id), parent = WORLD.notes.find(m => m.id === n.par);
+    return `<div class="parchment"><div class="page">
+      <div class="muted">${parent ? `Chapter of <span style="unicode-bidi:plaintext">${esc(parent.t)}</span> · ` : ""}${n.ed ? `last edited ${fmtDate(n.ed)}` : ""}${n.pin ? " · pinned (جلو چشم)" : ""}${n.done ? " · marked Done" : ""}</div>
+      <h4>${esc(n.t)}</h4>
+      ${n.sum ? `<p>${esc(n.sum)}</p>` : `<p class="muted">This note has no Summary in Notion. Its full text lives on the page.</p>`}
+      ${kids.length ? `<div><div class="muted">Chapters</div><div class="books">${kids.map(k => k.sealed ? `<div class="book sealed"><span class="spine" style="background:#2e2a33"></span><span class="bt">Sealed book</span><span class="bm">private</span></div>` : `<button class="book" ${goAttr({ type: "house", id: sel.id, view: "book", arg: k.id })}><span class="spine" style="background:#8a6a44"></span><span class="bt">${esc(k.t)}</span><span class="bm">${k.ed ? fmtDate(k.ed) : ""}</span></button>`).join("")}</div></div>` : ""}
+      <a href="${nurl(n.id)}" target="_blank" rel="noopener">Open in Notion</a>
+    </div></div>`;
+  }
+  function sheet(a) {
+    const ps = PERSONAS[a] || {}, st = agentStatus(a);
+    const houses = WORLD.projects.filter(p => p.ag.includes(a));
+    const memPct = ps.memLines ? Math.min(100, ps.memLines) : 0;
+    return `<div class="sheet"><canvas id="portrait" width="40" height="48" aria-label="${esc(a)} portrait"></canvas>
+      <div style="display:grid;gap:6px">
+        <div class="eyebrow">${agentDev(a)} · Resident</div>
+        <h2 style="margin:0">${esc(a)}</h2>
+        <div class="row"><span class="pill s-${st}">${STATUS_TXT[st]}</span>${st === "down" ? `<span class="note">silent since ${fmtDate(WORLD.mailbox.lastServerLetter)}</span>` : ""}</div>
+      </div></div>
+      ${st === "down" ? `<div class="banner">You shut down the old server agents. Their last Agent Mailbox reply was on ${fmtDate(WORLD.mailbox.lastServerLetter)}. HERMES runs Atlas Server now.</div>` : ""}
+      <div class="sec"><h3>Class <span>identity</span></h3><p style="margin:0">${esc(ps.identity || "No persona text found.")}</p></div>
+      ${ps.workflow && ps.workflow.length ? `<div class="sec"><h3>Abilities <span>workflow</span></h3><ol class="abil">${ps.workflow.map(w => `<li>${esc(w)}</li>`).join("")}</ol></div>` : ""}
+      ${ps.rules && ps.rules.length ? `<div class="sec"><h3>Oaths <span>rules</span></h3><ul class="list">${ps.rules.map(r => `<li><span class="t">${esc(r)}</span></li>`).join("")}</ul></div>` : ""}
+      ${ps.memLines != null ? `<div class="sec"><h3>Memory <span>${ps.memLines} / 100 lines · updated ${fmtDate(ps.memDate)}</span></h3><div class="meter ${ps.memLines >= 100 ? "hot" : ""}"><i style="width:${memPct}%"></i></div>${ps.memLines >= 100 ? `<div class="note" style="margin-top:4px">Over the 100-line limit. Time for the overflow procedure.</div>` : ""}</div>` : ""}
+      ${houses.length ? `<div class="sec"><h3>Lives in <span>${houses.length} ${houses.length === 1 ? "house" : "houses"}</span></h3><ul class="list">${houses.map(h => `<li><button class="lnk" ${goAttr({ type: "house", id: h.id, view: "home" })}><span class="t">${esc(h.n)}</span></button><span class="m">${esc((h.par ? PJ[h.par] : h).town?.sign || "")}</span></li>`).join("")}</ul></div>` : ""}
+      <div class="sec"><h3>Files</h3><div class="path">${ps.persona ? esc(ps.persona) : "persona: not in agent_workspace"}${ps.memory ? `<br>${esc(ps.memory)}` : ""}</div></div>`;
+  }
+
+  function renderHouse() {
+    const p = PJ[sel.id], top = p.par ? PJ[p.par] : p, tw = top.town;
+    const at = allTasks(p), notes = allNotes(p), ag = allAgents(p), total = Math.max(totalTasks(p), at.length), done = Math.max(0, total - at.length);
+    const overN = at.filter(t => t.over).length;
+    const head = `<div>
+      <div class="eyebrow">${esc(tw ? tw.n : "No area")} · ${p.par ? "Shed" : p.manor ? "Manor" : "House"} · ${esc(THEMES[themeOf(p)].label)}</div>
+      <h2 class="withem"><img class="emb" src="${emblem(themeOf(p))}" alt=""><span>${esc(p.n)}</span></h2>
+      <div class="row" style="margin-top:8px"><span class="pill s-${p.state || (p.st === "ip" ? "active" : p.st === "done" ? "done" : "idle")}">${STATE_TXT[p.state || (p.st === "ip" ? "active" : p.st === "done" ? "done" : "idle")]}</span>${p.pin ? `<span class="pill s-pin">Pinned</span>` : ""}${overN ? `<span class="pill s-over">${overN} overdue</span>` : ""}<a class="nlink" href="${nurl(p.id)}" target="_blank" rel="noopener">Open in Notion</a></div>
+      ${p.par ? `<div style="margin-top:6px">${backBtn("Main house: " + top.n, { type: "house", id: top.id, view: "home" })}</div>` : ""}
+    </div>`;
+    const homeBack = backBtn(p.n, { type: "house", id: p.id, view: "home" });
+    if (sel.view === "quests") { panel.innerHTML = head + homeBack + questLog(p); return; }
+    if (sel.view === "library") { panel.innerHTML = head + homeBack + library(p); return; }
+    if (sel.view === "book") { panel.innerHTML = head + backBtn("Library", { type: "house", id: p.id, view: "library" }) + bookPage(p, sel.arg); return; }
+    const slots = residentSlots(ag.length);
+    const hp = (x, y, w, h, name, s) => `<button class="hot" style="left:${x / IW * 100}%;top:${y / IH * 100}%;width:${w / IW * 100}%;height:${h / IH * 100}%" data-name="${esc(name)}" aria-label="${esc(name)}" ${goAttr(s)}></button>`;
+    panel.innerHTML = head + `
+      <div><div class="interior-wrap"><canvas class="interior" id="icv" width="${IW}" height="${IH}" aria-hidden="true"></canvas>
+        ${hp(6, 4, 42, 46, `Bookshelf · ${notes.length} books`, { type: "house", id: p.id, view: "library" })}
+        ${hp(56, 6, 50, 34, `Quest board · ${at.length} open`, { type: "house", id: p.id, view: "quests" })}
+        ${slots.map((s, i) => hp(s.x - 2, s.y - 2, 14, 20, `${ag[i]} · character sheet`, { type: "agent", id: ag[i], back: { type: "house", id: p.id, view: "home" } })).join("")}
+      </div><div class="cap">${esc(THEMES[themeOf(p)].label)} · click the shelf, the quest board or a resident.</div></div>
+      <div class="tiles">
+        <div class="tile"><b>${at.length}</b><span>open quests</span></div>
+        <div class="tile"><b>${done}</b><span>completed</span></div>
+        <div class="tile"><b>${notes.length}</b><span>books</span></div>
+        <div class="tile"><b>${ag.length}</b><span>residents</span></div>
+      </div>
+      <div class="btns"><button class="btn" ${goAttr({ type: "house", id: p.id, view: "quests" })}>Quest log</button><button class="btn" ${goAttr({ type: "house", id: p.id, view: "library" })}>Library</button></div>
+      <div class="sec"><h3>Residents <span>agents</span></h3>${ag.length ? `<div class="agents">${ag.map(a => agentChip(a)).join("")}</div>` : `<div class="empty">Nobody lives here. No agent works on this project yet.</div>`}</div>
+      ${p.subs.length ? `<div class="sec"><h3>Sheds <span>sub-projects</span></h3><ul class="list">${p.subs.map(s => `<li><span class="dot" style="background:${s.st === "done" ? "var(--green)" : s.st === "ip" ? "var(--gold)" : "var(--muted)"}"></span><button class="lnk" ${goAttr({ type: "house", id: s.id, view: "home" })}><span class="t">${esc(s.n)}</span></button><span class="m">${allTasks(s).length ? `${allTasks(s).length} open` : STATE_TXT[s.st === "ip" ? "active" : s.st === "done" ? "done" : "idle"]}</span></li>`).join("")}</ul></div>` : ""}
+      ${at.length ? `<div class="sec"><h3>Next quests</h3><div class="parchment" style="padding:10px"><div class="quests">${at.slice().sort((a, c) => (a.due || "9").localeCompare(c.due || "9")).slice(0, 3).map(tk => questCard(tk, false)).join("")}</div></div></div>` : ""}`;
+    wireAgents({ type: "house", id: p.id, view: "home" });
+    icvProject = p; icv = panel.querySelector("#icv").getContext("2d");
+    drawInterior(icv, p, performance.now() / 1000, !reduce);
+  }
+  function renderTown() {
+    const tw = TOWNS.find(t => t.id === sel.id);
+    const open = tw.houses.reduce((n, h) => n + h.open, 0), notes = tw.houses.reduce((n, h) => n + allNotes(h).length, 0);
+    const ag = [...new Set(tw.houses.flatMap(allAgents))], notices = areaTasks.filter(t => t.a === tw.id);
+    panel.innerHTML = `<div><div class="eyebrow">Area · Town</div><h2>${esc(tw.n)}</h2>
+      <div class="row" style="margin-top:8px"><span class="note">${tw.houses.length} ${tw.houses.length === 1 ? "house" : "houses"} · ${open} open quests · ${notes} books</span><a class="nlink" href="${nurl(tw.nid)}" target="_blank" rel="noopener">Open in Notion</a></div></div>
+      ${tw.houses.length <= 1 ? `<div class="banner" style="background:#26314a;border-color:#3c5a9a;color:#cfe0ff">A quiet town. Only ${tw.houses.length} project lives in this Area; related pages are filed elsewhere.</div>` : ""}
+      <div class="sec"><h3>Houses <span>projects</span></h3><ul class="list">${tw.houses.map(h => `<li><img class="emb sm" src="${emblem(themeOf(h))}" alt="" title="${esc(THEMES[themeOf(h)].label)}"><span class="dot" style="background:${h.state === "active" ? "var(--gold)" : h.state === "done" ? "var(--green)" : "var(--muted)"}"></span><button class="lnk" ${goAttr({ type: "house", id: h.id, view: "home" })}><span class="t">${esc(h.n)}</span></button><span class="m">${h.overN ? `<span style="color:#ff8a7e">${h.overN} overdue</span> · ` : ""}${h.open ? `${h.open} open` : STATE_TXT[h.state]}</span></li>`).join("")}</ul></div>
+      ${notices.length ? `<div class="sec"><h3>Town notice board <span>tasks with no project</span></h3><div class="parchment" style="padding:10px"><div class="quests">${notices.map(tk => questCard(tk, false)).join("")}</div></div></div>` : ""}
+      <div class="sec"><h3>Seen in town <span>agents</span></h3>${ag.length ? `<div class="agents">${ag.map(a => agentChip(a)).join("")}</div>` : `<div class="empty">No agents.</div>`}</div>`;
+    wireAgents({ type: "town", id: tw.id });
+  }
+  function renderKeep() {
+    panel.innerHTML = `<div><div class="eyebrow">Atlas Server · Ruins</div><h2>Atlas Keep</h2>
+      <div class="row" style="margin-top:8px"><span class="pill s-down">Shut down</span><span class="note">last letter ${fmtDate(WORLD.mailbox.lastServerLetter)}</span></div></div>
+      <div class="banner">You shut down the old server, so its castle has fallen to ruins at the edge of the map. No road leads here any more. Its last Agent Mailbox reply said: “${esc(WORLD.mailbox.lastServerNote)}”</div>
+      <div class="sec"><h3>Former residents <span>old server agents</span></h3><div class="agents">${SERVER_DOWN.map(a => agentChip(a)).join("")}</div></div>
+      <div class="sec"><h3>Who runs the server now</h3><ul class="list"><li><span class="dot" style="background:${COLORS.hermes}"></span><button class="lnk" ${goAttr({ type: "ship" })}><span class="t">HERMES, docked at the harbor</span></button><span class="m">Online</span></li></ul></div>`;
+    wireAgents({ type: "keep" });
+  }
+  function renderShip() {
+    const M = S.mail, n = unreadMail();
+    const when = M.at ? `checked ${fmtDateTime(M.at)}` : "not checked yet";
+    const state = !mcpApi ? `<div class="empty">Open this page in claude.ai with the Notion connector to check the Agent Mailbox.</div>`
+      : M.status === "syncing" ? `<div class="empty">Reading the Agent Mailbox…</div>`
+      : M.status === "error" ? `<div class="toast bad"><span>${esc(M.msg)}</span></div>`
+      : M.status === "idle" ? `<div class="empty">Press Sync ship to read HERMES's messages from the Agent Mailbox.</div>`
+      : !M.msgs.length ? `<div class="empty">${esc(M.msg || "No messages from HERMES in the Agent Mailbox.")}</div>` : "";
+    const PRI = { Urgent: "s-over", High: "s-active", Normal: "s-idle", Low: "s-idle" };
+    panel.innerHTML = `<div><div class="eyebrow">Harbor · Ship</div><h2>HERMES</h2>
+      <div class="row" style="margin-top:8px"><span class="pill s-online">Docked</span>${n ? `<span class="pill s-active">${n} unread</span>` : ""}<span class="note">${when}</span></div></div>
+      <div class="agents">${agentChip("hermes")}</div>
+      ${mcpApi ? `<div class="btns"><button class="btn" data-shipsync ${M.status === "syncing" ? "disabled" : ""}>${M.status === "syncing" ? "Syncing ship…" : "Sync ship"}</button></div>` : ""}
+      <div class="sec"><h3>Cargo hold <span>Agent Mailbox · from hermes</span></h3>
+        ${state}
+        ${M.msgs.length ? `<div style="display:grid;gap:6px">${M.msgs.map(m => `<div class="msg ${m.status === "Unread" ? "unread" : ""}">
+          <div class="row"><strong class="mt">${esc(m.subject)}</strong>${m.pr ? `<span class="pill ${PRI[m.pr] || "s-idle"}">${esc(m.pr)}</span>` : ""}<span class="pill ${m.status === "Unread" ? "s-active" : "s-idle"}">${esc(m.status)}</span></div>
+          ${m.body ? `<p class="mb">${esc(m.body)}</p>` : ""}
+          <small>${m.at ? fmtDateTime(new Date(m.at)) : ""}${m.to ? ` · to ${esc(m.to)}` : ""} · <a href="${nurl(m.id)}" target="_blank" rel="noopener">Open in Notion</a></small></div>`).join("")}</div>` : ""}
+        <div class="note" style="margin-top:6px">Read-only here. Handle and close messages in Notion; messages marked Done leave the ship. It shows the latest 30 open ones and counts Unread ones as cargo.</div>
+      </div>
+      <div class="sec"><h3>Old server's last letter</h3><ul class="list"><li><span class="t">${esc(WORLD.mailbox.lastServerNote)}</span><span class="m">${fmtDate(WORLD.mailbox.lastServerLetter)}</span></li></ul></div>`;
+    wireAgents({ type: "ship" });
+  }
+  function renderCamp() {
+    panel.innerHTML = `<div><div class="eyebrow">Wilderness · Camp</div><h2>Lost &amp; Found</h2>
+      <p class="note" style="margin-top:8px">Pages that are not connected to the tree. There is no road here because nothing links them to a town.</p></div>
+      <div class="sec"><h3>Projects with no Area</h3><ul class="list">${orphanProjects.map(p => `<li><img class="emb sm" src="${emblem(themeOf(p))}" alt=""><button class="lnk" ${goAttr({ type: "house", id: p.id, view: "home" })}><span class="t">${esc(p.n)}</span></button><span class="m">step inside</span></li>`).join("")}</ul></div>
+      <div class="sec"><h3>Tasks with an Area but no project</h3><div class="parchment" style="padding:10px"><div class="quests">${areaTasks.map(tk => questCard(tk, false)).join("")}</div></div></div>`;
+  }
+  function renderAgent() {
+    const back = sel.back || { type: "keep" };
+    const label = back.type === "house" ? PJ[back.id].n : back.type === "town" ? TOWNS.find(t => t.id === back.id).n : back.type === "ship" ? "HERMES" : "Atlas Keep";
+    panel.innerHTML = backBtn(label, back) + sheet(sel.id);
+    const pc = panel.querySelector("#portrait").getContext("2d");
+    px(pc, 0, 0, 40, 48, "#2b2750"); px(pc, 0, 36, 40, 12, "#3a345f");
+    for (let i = 0; i < 40; i += 4) px(pc, i, 36, 2, 1, "#4a4380");
+    drawPerson(pc, 10, 14, sel.id, 4, false, { down: agentStatus(sel.id) === "down" });
+    wireAgents(back);
+  }
+  function render() {
+    icv = null; icvProject = null;
+    ({ house: renderHouse, town: renderTown, keep: renderKeep, ship: renderShip, camp: renderCamp, agent: renderAgent })[sel.type]();
+    if (toast) panel.insertAdjacentHTML("afterbegin", `<div class="toast ${toast.ok ? "ok" : "bad"}" role="status"><span>${esc(toast.text)}</span>${toast.undo && mcpApi ? `<button class="qbtn" data-restore="${toast.undo}" ${pending.has(toast.undo) ? "disabled" : ""}>Undo</button>` : ""}<button class="x" data-dismiss aria-label="Dismiss">×</button></div>`);
+    wireLinks();
+    panel.querySelectorAll("[data-archive]").forEach(el => el.addEventListener("click", () => setArchived(el.dataset.archive, true)));
+    panel.querySelectorAll("[data-restore]").forEach(el => el.addEventListener("click", () => setArchived(el.dataset.restore, false)));
+    panel.querySelectorAll("[data-dismiss]").forEach(el => el.addEventListener("click", () => { toast = S.toast = null; render(); }));
+    panel.querySelectorAll("[data-shipsync]").forEach(el => el.addEventListener("click", syncShip));
+  }
+
+  // ---------- Notion: live sync + archive (mcp capability) ----------
+  const NOTION = "Notion", TASKS_DS = "collection://YOUR-TASKS-DATA-SOURCE-ID";
+  let mcpApi = S.mcpApi, toast = S.toast, ARCHIVED = S.ARCHIVED;
+  const pending = S.pending, sync = S.sync;
+  const PROJECTS_DS = "collection://YOUR-PROJECTS-DATA-SOURCE-ID", NOTES_DS = "collection://YOUR-NOTES-DATA-SOURCE-ID";
+  const AREA_BY_NID = Object.fromEntries(WORLD.areas.map(a => [a.nid, a.id]));
+  const PRIO = { "زیاد": "h", "متوسط": "m", "کم": "l" };
+  const idOf = u => String(u || "").replace(/-/g, "").slice(-32);
+  const rel = v => { try { const a = typeof v === "string" ? JSON.parse(v) : (v || []); return Array.isArray(a) ? a.map(idOf) : []; } catch (e) { return []; } };
+  const day = v => v ? String(v).slice(0, 10) : undefined;
+  const clean = s => String(s || "").replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").replace(/\*\*/g, "").replace(/\\([\[\]()>*_#`])/g, "$1").replace(/\s+/g, " ").trim();
+  // Notes whose title matches this are stored sealed (no title shown). Adjust to your own privacy rules.
+  const SENSITIVE = /\b(private|personal|journal|diary)\b|خصوصی/i;
+  const isYes = v => v === "__YES__" || v === true;
+  function rowToProject(r) {
+    const id = idOf(r.url), st = r["Status 1"];
+    return { id, n: clean(r.Name).slice(0, 120) || "Untitled", st: st === "In progress" ? "ip" : st === "Done" ? "done" : "ns",
+      a: rel(r.Areas).map(x => AREA_BY_NID[x]).find(Boolean) || null, par: rel(r["Parent item"])[0] || undefined,
+      tt: rel(r.tasks).length, ag: SNAP_AG[id] || [], pin: isYes(r["جلو چشم"]) };
+  }
+  function rowToNote(r, projIds) {
+    const id = idOf(r.url), projs = rel(r.projects), t = clean(r.Name).slice(0, 140);
+    return { id, t: t || "Untitled", p: projs.find(x => projIds.has(x)) || null, par: rel(r["Parent item"])[0] || undefined,
+      ed: day(r["Last Edited"]), sum: clean(r.Summary).slice(0, 600) || undefined, pin: isYes(r["جلو چشم"]), done: r["Status 1"] === "Done",
+      sealed: SNAP_SEALED.has(id) || SENSITIVE.test(t) };
+  }
+  // turn three Notion queries into a fresh world
+  function buildWorld(pRows, nRows, tRows) {
+    const projects = pRows.map(rowToProject).filter(p => p.id.length === 32);
+    const pid = new Set(projects.map(p => p.id)), byId = Object.fromEntries(projects.map(p => [p.id, p]));
+    projects.forEach(p => { if (p.par && !pid.has(p.par)) p.par = undefined; if (p.par && !p.a) p.a = byId[p.par].a; });
+    // a sub-project whose parent sits in another Area is drawn as its own house
+    projects.forEach(p => { if (p.par && byId[p.par].a !== p.a) p.par = undefined; });
+    let notes = nRows.map(r => rowToNote(r, pid)).filter(n => n.p && n.id.length === 32);
+    const nid = Object.fromEntries(notes.map(n => [n.id, n]));
+    let changed = true;
+    while (changed) { changed = false; notes.forEach(n => { if (!n.sealed && n.par && nid[n.par] && nid[n.par].sealed) { n.sealed = true; changed = true; } }); }
+    notes = notes.map(n => n.sealed ? { id: n.id, p: n.p, par: n.par, sealed: true } : n);
+    const tasks = tRows.map(r => rowToTask(r, pid)).filter(t => t.id.length === 32);
+    const now = new Date(), iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return { asOf: iso, live: true, areas: WORLD.areas, projects, tasks, notes, mailbox: WORLD.mailbox };
+  }
+  function rowToTask(r, projIds) {
+    const projects = rel(r.projects), areas = rel(r.Areas), p = projects.find(id => projIds ? projIds.has(id) : PJ[id]) || null;
+    return { id: idOf(r.url), t: r.task || "Untitled", st: r.Status === "In progress" ? "ip" : undefined, done: r.Status === "Done",
+      due: day(r["date:due:start"]), d: day(r["date:Date:start"]), pr: PRIO[r.priority], p,
+      a: p ? undefined : (areas.map(x => AREA_BY_NID[x]).find(Boolean) || null) };
+  }
+  function errText(e, verb) {
+    const c = e && e.code;
+    if (c === "needs_reauth") return "Notion needs reconnecting. Reconnect it in claude.ai Settings → Connectors, then try again.";
+    if (c === "server_not_connected" || c === "server_not_found") return "Notion isn't connected for you. Add it in claude.ai Settings → Connectors.";
+    if (c === "selection_required") return "You have more than one Notion connector. Pick one when claude.ai asks, then try again.";
+    if (c === "not_in_manifest" || c === "not_granted" || c === "consent_required") return "This page isn't allowed to use Notion. Allow Notion when the page asks, then try again.";
+    if (c === "blocked_by_policy" || c === "approval_required") return "Your organization's policy blocks this Notion action.";
+    if (c === "capability_disabled" || c === "capability_removed") return "Notion actions aren't available in this view. Open the page in claude.ai.";
+    if (c === "tool_error") return `Notion refused to ${verb}: ${(e.message || "no details").slice(0, 160)}`;
+    if (verb !== "sync" && (c === "server_unavailable" || c === "upstream_error" || c === "cancelled")) return `Notion didn't confirm in time, so the ${verb} may or may not have gone through. Press Sync to check.`;
+    return `Couldn't ${verb}: ${((e && e.message) || "Notion didn't answer").slice(0, 160)}. Try again.`;
+  }
+  function refreshAll() {
+    indexTasks(); houseStats(); updateSigns(); renderHud(); renderFindings(); render();
+  }
+  const notArchived = { type: "property", property: "archive", propertyType: "checkbox", operator: "checkbox_is", value: { type: "exact", value: false } };
+  async function query(ds, extra) {
+    const res = await mcpApi.callTool(NOTION, "notion-query-data-sources", { data: { mode: "rows", data_source_url: ds,
+      filter: { type: "group", operator: "and", filters: [notArchived, ...(extra || [])] }, limit: 100 } }, { cache: false });
+    const rows = res && res.payload && res.payload.results;
+    if (!Array.isArray(rows)) throw { code: "tool_error", message: "Notion sent back something this page can't read." };
+    return { rows, more: !!res.payload.has_more };
+  }
+  // ---------- reads: saved "Atlas Realm" views first (no usage limit), custom query as the backup ----------
+  const MAIL_DS = "collection://YOUR-MAILBOX-DATA-SOURCE-ID";
+  const VIEWS = /*__VIEWS__*/;
+  const hermesOnly = [{ type: "property", property: "from", propertyType: "select", operator: "enum_is", value: { type: "exact", value: "hermes" } }];
+  // the same filters are re-applied to view rows, so an edited view can't leak or add the wrong pages
+  const SOURCES = {
+    projects: { view: VIEWS.projects, run: () => query(PROJECTS_DS), keep: r => !isYes(r.archive) },
+    notes: { view: VIEWS.notes, run: () => query(NOTES_DS, [{ type: "property", property: "projects", propertyType: "relation", operator: "is_not_empty" }]),
+      keep: r => !isYes(r.archive) && rel(r.projects).length > 0 },
+    tasks: { view: VIEWS.tasks, run: () => query(TASKS_DS), keep: r => !isYes(r.archive) },
+    mail: { view: VIEWS.mail, pages: 1, keep: r => r.from === "hermes",
+      run: async () => {
+        const res = await mcpApi.callTool(NOTION, "notion-query-data-sources", { data: { mode: "rows", data_source_url: MAIL_DS,
+          filter: { type: "group", operator: "and", filters: hermesOnly }, sort: [{ property: "Created At", direction: "descending" }], limit: 30 } }, { cache: false });
+        const rows = res && res.payload && res.payload.results;
+        if (!Array.isArray(rows)) throw { code: "tool_error", message: "Notion sent back something this page can't read." };
+        return { rows, more: false };
+      } },
+  };
+  async function readView(url, maxPages) {
+    const rows = []; let cursor = null;
+    for (let i = 0; i < maxPages; i++) {
+      const res = await mcpApi.callTool(NOTION, "notion-query-data-sources", { data: { mode: "view", view_url: url, page_size: 100, ...(cursor ? { start_cursor: cursor } : {}) } }, { cache: false });
+      const pl = res && res.payload;
+      if (!pl || !Array.isArray(pl.results)) throw { code: "tool_error", message: "The Atlas Realm view sent back something this page can't read." };
+      rows.push(...pl.results);
+      if (!pl.has_more || !pl.next_cursor) return { rows, more: false };
+      cursor = pl.next_cursor;
+    }
+    return { rows, more: true };
+  }
+  // falls back only when the view itself is the problem; auth and consent errors would fail the backup too
+  const VIEW_FALLBACK = new Set(["tool_error", "bad_request", "upstream_error", "server_unavailable", "transform_error"]);
+  async function readSource(key) {
+    const s = SOURCES[key];
+    if (s.view) {
+      try { const r = await readView(s.view, s.pages || 5); return { rows: r.rows.filter(s.keep), more: r.more, via: "view" }; }
+      catch (e) { if (!e || !VIEW_FALLBACK.has(e.code)) throw e; }
+    }
+    const r = await s.run();
+    return { rows: r.rows.filter(s.keep), more: r.more, via: "query" };
+  }
+  const viaOf = list => list.every(x => x.via === "view") ? "views" : list.every(x => x.via === "query") ? "queries" : "mixed";
+
+  async function syncNow() {
+    if (!mcpApi || sync.status === "syncing") return;
+    sync.status = "syncing"; renderSync();
+    try {
+      const [p, n, t] = await Promise.all([readSource("projects"), readSource("notes"), readSource("tasks")]);
+      if (dead) return;
+      if (!p.rows.length) throw { code: "tool_error", message: "Notion returned no projects, so the map was left as it was." };
+      const next = buildWorld(p.rows, n.rows, t.rows);
+      Object.assign(sync, { status: "live", at: new Date(), via: viaOf([p, n, t]), more: [p.more && "projects", n.more && "notes", t.more && "tasks"].filter(Boolean), msg: "" });
+      store.set("world.v1", { at: sync.at.getTime(), more: sync.more, world: next });
+      reboot(next);
+      scheduleAuto();
+    } catch (e) { if (dead) return; Object.assign(sync, { status: "error", msg: errText(e, "sync") }); renderSync(); }
+  }
+
+  // ---------- ship: read only the Agent Mailbox, only HERMES's messages ----------
+  const bodyText = s => String(s || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/\\([\[\]>*_])/g, "$1").replace(/\n{3,}/g, "\n\n").trim().slice(0, 900);
+  function shipChanged() { if (dead) { if (CURRENT) CURRENT.shipChanged(); return; } updateSigns(); renderSync(); if (sel.type === "ship") render(); }
+  async function syncShip() {
+    const M = S.mail;
+    if (!mcpApi || M.status === "syncing") return;
+    M.status = "syncing"; shipChanged();
+    try {
+      const { rows, via } = await readSource("mail");
+      M.msgs = rows.map(r => ({ id: idOf(r.url), subject: clean(r.subject) || "(no subject)", body: bodyText(r.Body), at: r["Created At"] || null,
+        status: r.Status || "Unread", pr: r.priority || "", to: r.to || "" })).filter(m => m.id.length === 32 && m.status !== "Done")
+        .sort((a, b) => String(b.at || "").localeCompare(String(a.at || ""))).slice(0, 30);
+      Object.assign(M, { status: "ok", at: new Date(), via, msg: M.msgs.length ? "" : "No open messages from HERMES. Done ones leave the ship." });
+      store.set("mail.v1", { at: M.at.getTime(), msgs: M.msgs });
+    } catch (e) {
+      // a missing "hermes" sender option means HERMES simply hasn't posted yet
+      if (e && e.code === "tool_error" && /hermes|option/i.test(e.message || "")) Object.assign(M, { status: "ok", at: new Date(), msgs: [], msg: "HERMES hasn't posted to the Agent Mailbox yet." });
+      else Object.assign(M, { status: "error", msg: errText(e, "read the mailbox") });
+    }
+    shipChanged();
+  }
+
+  // ---------- daily auto-sync (only once Notion is allowed, never prompts) ----------
+  async function notionAllowed() {
+    const cl = window.claude;
+    const perms = cl && typeof cl.use === "function" ? await cl.use("permissions").catch(() => null) : null;
+    return perms ? (await perms.state("mcp:" + NOTION).catch(() => "unavailable")) === "granted" : false;
+  }
+  const nextAutoAt = () => (sync.at ? sync.at.getTime() : 0) + DAY;
+  function scheduleAuto() {
+    clearTimeout(S.timer);
+    S.timer = setTimeout(() => { if (CURRENT) CURRENT.auto(); }, Math.max(60 * 1000, nextAutoAt() - Date.now()));
+  }
+  async function auto() {
+    if (dead) { if (CURRENT) CURRENT.auto(); return; }
+    if (!mcpApi) return;
+    if (!(await notionAllowed())) { scheduleAuto(); return; }
+    if (Date.now() >= nextAutoAt()) { await syncNow(); if (CURRENT) await CURRENT.syncShip(); }
+    else if (S.mail.status === "idle") await syncShip();
+    scheduleAuto();
+  }
+  async function setArchived(id, on) {
+    if (!mcpApi || pending.has(id)) return;
+    const t = on ? WORLD.tasks.find(x => x.id === id) : ARCHIVED.find(x => x.id === id);
+    if (!t) return;
+    pending.add(id); render();
+    try {
+      await mcpApi.callTool(NOTION, "notion-update-page", { page_id: id, command: "update_properties", properties: { archive: on ? "__YES__" : "__NO__" } }, { cache: false });
+      if (on) { WORLD.tasks = WORLD.tasks.filter(x => x.id !== id); ARCHIVED.unshift(t); toast = { ok: true, text: `Archived in Notion: ${t.t}`, undo: id }; }
+      else { ARCHIVED = ARCHIVED.filter(x => x.id !== id); WORLD.tasks.push(t); toast = { ok: true, text: `Restored in Notion: ${t.t}` }; }
+      S.ARCHIVED = ARCHIVED; S.toast = toast;
+      pending.delete(id); if (!dead) refreshAll();
+    } catch (e) { pending.delete(id); toast = S.toast = { ok: false, text: errText(e, on ? "archive" : "restore") }; if (!dead) render(); }
+  }
+  const syncEl = document.getElementById("syncbar");
+  function renderSync() {
+    const last = sync.at ? fmtDateTime(sync.at) : "";
+    if (!mcpApi) {
+      syncEl.innerHTML = `<span class="sdot off"></span><span>${WORLD.live ? `Your last sync from ${last}.` : `Snapshot from ${fmtDate(WORLD.asOf)}.`} Open this page in claude.ai with the Notion connector to sync and archive.</span>`;
+      return;
+    }
+    const more = sync.more && sync.more.length ? ` · showing the first 100 ${sync.more.join(" and ")}` : "";
+    const next = sync.at ? ` · next auto-sync ${fmtDateTime(new Date(nextAutoAt()))}` : " · syncs itself every 24 hours once Notion is allowed";
+    const via = sync.via === "queries" && (VIEWS.projects || VIEWS.notes || VIEWS.tasks) ? " · the Atlas Realm views failed, so the backup query was used"
+      : sync.via === "mixed" ? " · some Atlas Realm views failed; the backup query filled in" : "";
+    const label = sync.status === "live" ? `<span class="sdot on"></span><span>Live from Notion · synced ${last}${next}${more}${via}</span>`
+      : sync.status === "syncing" ? `<span class="sdot busy"></span><span>Syncing projects, notes and tasks with Notion…</span>`
+      : sync.status === "error" ? `<span class="sdot bad"></span><span>${esc(sync.msg)}${WORLD.live ? ` Showing your last sync from ${last}.` : ` Showing the snapshot from ${fmtDate(WORLD.asOf)}.`}</span>`
+      : `<span class="sdot off"></span><span>Showing the snapshot from ${fmtDate(WORLD.asOf)}. Sync once to allow Notion; after that it syncs itself every 24 hours.</span>`;
+    const n = unreadMail(), shipBusy = S.mail.status === "syncing";
+    syncEl.innerHTML = `${label}<button class="btn" id="syncbtn" ${sync.status === "syncing" ? "disabled" : ""}>${sync.status === "live" ? "Sync now" : "Sync with Notion"}</button><button class="btn" id="shipbtn" ${shipBusy ? "disabled" : ""}>${shipBusy ? "Syncing ship…" : `Sync ship${n ? ` · ${n} unread` : ""}`}</button>`;
+    syncEl.querySelector("#syncbtn").addEventListener("click", syncNow);
+    syncEl.querySelector("#shipbtn").addEventListener("click", syncShip);
+  }
+  function go(s) { sel = s; S.sel = s; render(); panel.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" }); if (reduce) drawWorld(0, false); }
+
+  // ---------- HUD, legend, report ----------
+  const houses = TOWNS.flatMap(t => t.houses);
+  const bookN = WORLD.notes.length, sealedN = WORLD.notes.filter(n => n.sealed).length;
+  document.getElementById("asof").textContent = WORLD.live
+    ? `Live from your Notion: non-archived projects, notes and tasks. Personas come from agent_workspace. Residents are assigned by workspace folder because Notion has no agent field.`
+    : `Snapshot of your Notion from ${fmtDate(WORLD.asOf)} until you sync. Personas come from agent_workspace. Residents are assigned by workspace folder because Notion has no agent field.`;
+  function renderHud() {
+    const open = WORLD.tasks.filter(t => !t.done), overdue = open.filter(t => t.over), waiting = WORLD.tasks.filter(t => t.done);
+    document.getElementById("hud").innerHTML = [
+      [TOWNS.length, "towns"],[houses.length, "houses"], [WORLD.projects.filter(p => p.par).length, "sheds"], [open.length, "open quests"],
+      [overdue.length, "overdue", "warn"], ...(waiting.length ? [[waiting.length, "done, not archived", "warn"]] : []), [ARCHIVED.length, "archived from here", "ok"],
+      [bookN, `books (${sealedN} sealed)`], ["3", "server agents shut down", "off"], ["1", "ship docked", "ok"],
+    ].map(([v, k, c]) => `<div class="s ${c || ""}"><b>${v}</b><span>${k}</span></div>`).join("");
+  }
+
+  const legend = document.getElementById("legend"), legendItems = [];
+  const L = (k, d, p) => ({ k, d, p: Object.assign({ state: "active", open: 0, overN: 0, staleN: 0, pinned: false, variant: 0, subs: [], tasks: [], notes: [], tt: 0 }, p) });
+  [
+    L("Active", "lit windows, smoke", {}), L("Open quests", "yellow !", { open: 2 }), L("Overdue", "red !", { open: 2, overN: 1 }),
+    L("Done", "gold flag", { state: "done" }), L("Not started", "scaffolding", { state: "idle" }), L("Pinned", "blue banner", { pinned: true }),
+    L("Stale", "cobweb, from 2025", { staleN: 1 }),
+  ].forEach(it => {
+    const el = document.createElement("div"); el.className = "it";
+    const cv = document.createElement("canvas"); cv.width = 24; cv.height = 30; cv.setAttribute("aria-hidden", "true");
+    it.cv = cv.getContext("2d"); el.appendChild(cv);
+    el.insertAdjacentHTML("beforeend", `<span><strong>${it.k}</strong>${it.d}</span>`);
+    legend.appendChild(el); it.draw = (t, a) => { it.cv.clearRect(0, 0, 24, 30); drawCottage(it.cv, 4, 12, it.p, "#c8553d", "#9c3f2c", t, a); };
+    legendItems.push(it);
+  });
+  const extra = (label, d, fn) => { const el = document.createElement("div"); el.className = "it"; const cv = document.createElement("canvas"); cv.width = 24; cv.height = 30; cv.setAttribute("aria-hidden", "true"); fn(cv.getContext("2d")); el.appendChild(cv); el.insertAdjacentHTML("beforeend", `<span><strong>${label}</strong>${d}</span>`); legend.appendChild(el); };
+  extra("Shed", "sub-project", c => drawAnnex(c, 8, 16, [{ st: "ns" }]));
+  extra("HERMES", "messenger", c => drawPerson(c, 9, 14, "hermes", 1, false));
+  const used = [...new Set(WORLD.projects.map(themeOf))];
+  document.getElementById("emblems").innerHTML = used.map(k => `<span class="em"><img src="${emblem(k)}" alt="">${esc(THEMES[k].label)}</span>`).join("");
+
+  const find = (t, d) => `<div class="find"><b>${t}</b><p>${d}</p></div>`;
+  function renderFindings() {
+    const overdue = WORLD.tasks.filter(t => t.over).sort((a, c) => a.due.localeCompare(c.due)), stale = WORLD.tasks.filter(t => t.stale);
+    const waiting = WORLD.tasks.filter(t => t.done);
+    const lost = orphanProjects.length + areaTasks.length;
+    const f = [
+      find(`${overdue.length} quests are overdue`, overdue.length ? `The oldest is <span dir="rtl">${esc(overdue[0].t)}</span> (due ${fmtDate(overdue[0].due)}).` : "Nothing is past its due date."),
+      waiting.length ? find(`${waiting.length} done but not archived`, "They are marked Done in Notion but still active. Archive them from their quest logs to keep the workspace clean.") : "",
+      find("Atlas Keep is shut down", `The old server agents are shut down; their last Agent Mailbox reply was on ${fmtDate(WORLD.mailbox.lastServerLetter)}.`),
+      lost ? find(`${lost} ${lost === 1 ? "page" : "pages"} in Lost & Found`, `${orphanProjects.length} ${orphanProjects.length === 1 ? "project has" : "projects have"} no Area and ${areaTasks.length} ${areaTasks.length === 1 ? "task is" : "tasks are"} linked to an Area but no project, so they never show on a house's board.`) : "",
+      stale.length ? find(`${stale.length} stale quests from 2025`, "They have planned dates in early 2025 and are still open. Archive them or give them a new date.") : "",
+      ((n) => find(`${n} ${n === 1 ? "house has" : "houses have"} no resident`, "Add an Agent select property to the Projects database so the map can place agents from Notion instead of from folder names."))(houses.filter(h => !allAgents(h).length).length),
+    ];
+    document.getElementById("findings").innerHTML = f.join("");
+  }
+
+  // ---------- boot ----------
+  renderHud(); renderFindings(); renderSync(); render();
+  if (!S.booted) {
+    S.booted = true;
+    (async () => {
+      const cl = window.claude;
+      if (!cl || typeof cl.use !== "function") return;
+      const api = await cl.use("mcp").catch(() => null);
+      if (!api || dead) return;
+      mcpApi = S.mcpApi = api; renderSync(); render();
+      auto();
+    })();
+  }
+  function frame(ms) {
+    if (dead) return;
+    const t = ms / 1000;
+    drawWorld(t, true);
+    legendItems.forEach(it => it.draw(t, true));
+    if (icv && icvProject) drawInterior(icv, icvProject, t, true);
+    rafId = requestAnimationFrame(frame);
+  }
+  if (reduce) { drawWorld(0, false); legendItems.forEach(it => it.draw(0, false)); }
+  else rafId = requestAnimationFrame(frame);
+
+  return {
+    auto, syncShip, shipChanged,
+    destroy() {
+      dead = true; cancelAnimationFrame(rafId);
+      mapEl.querySelectorAll(".hit, .sign").forEach(el => el.remove());
+      legend.innerHTML = ""; document.getElementById("emblems").innerHTML = "";
+    },
+  };
+}
+CURRENT = boot(START || SNAPSHOT);
+</script>
